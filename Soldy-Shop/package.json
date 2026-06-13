@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "Soldy.Shop - Full-stack eCommerce checkout and payment platform",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
+    "server": "cd server && npm run start",
+    "server:dev": "cd server && npm run dev",
     "client": "cd client && npm run dev",
+    "postinstall": "cd server && npm install",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",
     "build": "cd client && npm run build",
     "seed:furniture": "cd server && npm run seed:furniture"
