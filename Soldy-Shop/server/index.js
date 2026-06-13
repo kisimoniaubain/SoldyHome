@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -96,14 +97,26 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Root route for quick browser checks
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Welcome to Soldy.Shop API',
-    docs: '/api/health',
+const frontendDistPath = path.resolve(__dirname, '../client/dist');
+const hasFrontendBuild = fs.existsSync(frontendDistPath);
+
+if (hasFrontendBuild) {
+  app.use(express.static(frontendDistPath));
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    return res.sendFile(path.join(frontendDistPath, 'index.html'));
   });
-});
+} else {
+  // Root route for quick browser checks when frontend is not built.
+  app.get('/', (req, res) => {
+    res.json({
+      success: true,
+      message: 'Welcome to Soldy.Shop API',
+      docs: '/api/health',
+    });
+  });
+}
 
 // 404 handler
 app.use((req, res) => {
