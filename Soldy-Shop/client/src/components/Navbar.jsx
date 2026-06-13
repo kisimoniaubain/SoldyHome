@@ -19,6 +19,8 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { t } = useLanguage();
+  const displayName = String(user?.name || user?.fullName || 'User');
+  const displayInitial = String(displayName[0] || 'U').toUpperCase();
 
   const cartCount = items.reduce((acc, i) => acc + i.qty, 0);
 
@@ -102,12 +104,12 @@ export default function Navbar() {
                 >
                   <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
                     {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                      <img src={user.avatar} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xs font-bold text-primary-600">{user.name[0].toUpperCase()}</span>
+                      <span className="text-xs font-bold text-primary-600">{displayInitial}</span>
                     )}
                   </div>
-                  <span className="hidden sm:block text-sm font-medium text-white max-w-[80px] truncate">{user.name}</span>
+                  <span className="hidden sm:block text-sm font-medium text-white max-w-[80px] truncate">{displayName}</span>
                   <ChevronDown size={14} className="text-white/70" />
                 </button>
 

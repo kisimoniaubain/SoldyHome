@@ -14,6 +14,17 @@ if (isLocalFallbackSession) {
 const savedUser = isLocalFallbackSession ? null : savedUserRaw;
 const savedToken = isLocalFallbackSession ? null : savedTokenRaw;
 
+const parseSavedUser = (rawValue) => {
+  if (!rawValue) return null;
+  try {
+    const parsed = JSON.parse(rawValue);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (_error) {
+    localStorage.removeItem('soldyUser');
+    return null;
+  }
+};
+
 export const registerUser = createAsyncThunk('auth/register', async (data, { rejectWithValue }) => {
   try {
     const res = await api.post('/auth/register', data);
@@ -55,7 +66,7 @@ export const updateProfile = createAsyncThunk('auth/updateProfile', async (data,
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: savedUser ? JSON.parse(savedUser) : null,
+    user: parseSavedUser(savedUser),
     token: savedToken || null,
     loading: false,
     error: null,
