@@ -2,9 +2,9 @@ services:
   - type: web
     name: soldy-shop-api
     runtime: node
-    rootDir: server
-    buildCommand: npm ci
-    startCommand: npm start
+    rootDir: Soldy-Shop/server
+    buildCommand: cd Soldy-Shop/server && npm ci
+    startCommand: cd Soldy-Shop/server && npm start
     healthCheckPath: /api/health
     autoDeploy: false
     envVars:
