@@ -4,7 +4,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const asyncHandler = require('express-async-handler');
 const { protect } = require('../middleware/auth');
-const { admin } = require('../middleware/admin');
+const { sellerOrAdmin } = require('../middleware/seller');
 
 const isCloudinaryConfigured = () => {
   const values = [
@@ -38,7 +38,7 @@ const upload = multer({
 router.post(
   '/',
   protect,
-  admin,
+  sellerOrAdmin,
   upload.single('image'),
   asyncHandler(async (req, res) => {
     if (!req.file) {

@@ -30,7 +30,21 @@ api.interceptors.request.use((config) => {
 // Handle 401 globally
 api.interceptors.response.use(
   (res) => res,
-  (err) => Promise.reject(err)
+  (err) => {
+    const status = err?.response?.status;
+    const message = String(err?.response?.data?.message || '').toLowerCase();
+
+    if (status === 401 && message.includes('token')) {
+      try {
+        localStorage.removeItem('soldyToken');
+        localStorage.removeItem('soldyUser');
+      } catch {
+        // ignore storage errors
+      }
+    }
+
+    return Promise.reject(err);
+  }
 );
 
 export default api;
