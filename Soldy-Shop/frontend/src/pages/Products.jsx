@@ -7,6 +7,7 @@ import Loader from '../components/Loader';
 import furnitureProducts from '../data/furnitureProducts';
 import { SlidersHorizontal, X, Eye, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Zap, Star, TrendingUp, Clock, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { applyImageFallback, normalizeImageUrl } from '../utils/imageUrl';
 
 export default function Products() {
   const dispatch = useDispatch();
@@ -307,8 +308,9 @@ export default function Products() {
                   aria-label={`Preview ${photo.name}`}
                 >
                   <img
-                    src={photo.image}
+                    src={normalizeImageUrl(photo.image)}
                     alt={photo.name}
+                    onError={(e) => applyImageFallback(e, 0)}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <span className="absolute left-2 bottom-2 rounded-md bg-black/70 px-2 py-1 text-xs font-semibold text-white">
@@ -344,8 +346,9 @@ export default function Products() {
               </button>
             </div>
             <img
-              src={previewPhoto.image}
+              src={normalizeImageUrl(previewPhoto.image)}
               alt={previewPhoto.name}
+              onError={(e) => applyImageFallback(e, 1)}
               className="w-full max-h-[72vh] sm:max-h-[78vh] object-contain rounded-xl bg-black"
             />
           </div>
@@ -398,8 +401,9 @@ export default function Products() {
               onTouchEnd={onBestSellingTouchEnd}
             >
               <img
-                src={bestSellingPhotos[bestSellingPhotoIndex].image}
+                src={normalizeImageUrl(bestSellingPhotos[bestSellingPhotoIndex].image)}
                 alt={bestSellingPhotos[bestSellingPhotoIndex].name}
+                onError={(e) => applyImageFallback(e, bestSellingPhotoIndex)}
                 className="w-full max-h-[68vh] sm:max-h-[72vh] object-contain"
               />
               {bestSellingPhotos.length > 1 && (

@@ -22,7 +22,16 @@ const uploadRoutes = require('./routes/upload');
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      "img-src": ["'self'", 'data:', 'blob:', 'https:'],
+      "connect-src": ["'self'", 'https:', 'wss:'],
+    },
+  },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 // Rate limiting
 const limiter = rateLimit({
