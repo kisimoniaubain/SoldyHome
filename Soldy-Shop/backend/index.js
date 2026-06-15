@@ -138,14 +138,14 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`🚀 Soldy.Shop server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    });
   } catch (error) {
     global.__DB_CONNECTED__ = false;
-    console.error(`❌ Failed to start server: ${error.message}`);
-    process.exit(1);
+    console.error(`⚠️ Database not connected: ${error.message}`);
   }
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Soldy.Shop server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
 };
 
 startServer();
