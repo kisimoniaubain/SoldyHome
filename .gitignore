@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+Soldy-Shop/node_modules/
+
+# Environment files
+.env
+frontend/.env
+backend/.env
+.env.local
+.env.production
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# Uploads (user content)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+.DS_Store
+Thumbs.db
+*.lock
+
+# Temp files
+*.tmp
+package-root.json
+.env.example-root
+.gitignore-temp
+README-soldy.md
+MPESA_SUMMARY.md
