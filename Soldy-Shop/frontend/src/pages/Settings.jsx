@@ -90,7 +90,7 @@ export default function Settings() {
               className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
                 storageStatus.ready
                   ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                  : 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'border-[#b45309] bg-[#b45309] text-white dark:border-[#b45309] dark:bg-[#b45309] dark:text-white'
               }`}
             >
               {storageStatus.ready ? 'Ready' : 'Needs configuration'}
@@ -154,3 +154,4 @@ export default function Settings() {
     </div>
   );
 }
+

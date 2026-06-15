@@ -33,51 +33,103 @@ if (!fs.existsSync(uploadsDir)) {
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error('Only image and video files are allowed'), false);
     }
   },
 });
+
+const mediaUpload = upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'images', maxCount: 20 },
+  { name: 'media', maxCount: 20 },
+  { name: 'files', maxCount: 20 },
+]);
+
+const collectUploadedFiles = (req) => {
+  if (!req.files) return [];
+  return ['image', 'images', 'media', 'files']
+    .flatMap((field) => req.files[field] || [])
+    .filter(Boolean);
+};
+
+const mediaExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.mp4', '.mov', '.webm', '.m4v'];
+
+const toLocalExtension = (originalName, mimetype) => {
+  const ext = path.extname(originalName || '').toLowerCase();
+  if (mediaExtensions.includes(ext)) return ext;
+  if (String(mimetype || '').startsWith('video/')) return '.mp4';
+  return '.jpg';
+};
 
 router.post(
   '/',
   protect,
   sellerOrAdmin,
-  upload.single('image'),
+  mediaUpload,
   asyncHandler(async (req, res) => {
-    if (!req.file) {
+    const files = collectUploadedFiles(req);
+    if (!files.length) {
       res.status(400);
       throw new Error('No file uploaded');
     }
 
-    if (!isCloudinaryConfigured()) {
-      const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
-      const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext) ? ext : '.jpg';
-      const fileName = `${Date.now()}-${crypto.randomUUID()}${safeExt}`;
-      const filePath = path.join(uploadsDir, fileName);
+    const uploaded = [];
 
-      fs.writeFileSync(filePath, req.file.buffer);
+    if (!isCloudinaryConfigured()) {
+      for (const file of files) {
+        const safeExt = toLocalExtension(file.originalname, file.mimetype);
+        const fileName = `${Date.now()}-${crypto.randomUUID()}${safeExt}`;
+        const filePath = path.join(uploadsDir, fileName);
+
+        fs.writeFileSync(filePath, file.buffer);
+        uploaded.push({
+          url: `/uploads/${fileName}`,
+          resourceType: file.mimetype.startsWith('video/') ? 'video' : 'image',
+          storage: 'local',
+        });
+      }
 
       return res.json({
         success: true,
-        url: `/uploads/${fileName}`,
-        storage: 'local',
+        url: uploaded[0].url,
+        urls: uploaded.map((item) => item.url),
+        files: uploaded,
       });
     }
 
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    for (const file of files) {
+      const b64 = Buffer.from(file.buffer).toString('base64');
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
+      const isVideo = file.mimetype.startsWith('video/');
 
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'soldy-shop',
-      transformation: [{ width: 800, quality: 'auto', fetch_format: 'auto' }],
+      const options = {
+        folder: 'soldy-shop',
+        resource_type: 'auto',
+      };
+
+      if (!isVideo) {
+        options.transformation = [{ width: 800, quality: 'auto', fetch_format: 'auto' }];
+      }
+
+      const result = await cloudinary.uploader.upload(dataURI, options);
+      uploaded.push({
+        url: result.secure_url,
+        publicId: result.public_id,
+        resourceType: result.resource_type || (isVideo ? 'video' : 'image'),
+      });
+    }
+
+    return res.json({
+      success: true,
+      url: uploaded[0].url,
+      urls: uploaded.map((item) => item.url),
+      files: uploaded,
     });
-
-    return res.json({ success: true, url: result.secure_url, publicId: result.public_id });
   })
 );
 

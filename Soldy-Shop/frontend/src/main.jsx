@@ -35,22 +35,26 @@ class ErrorBoundary extends React.Component {
 
 applyTheme(getInitialTheme());
 
+const appTree = (
+  <ErrorBoundary>
+    <Provider store={store}>
+      <LanguageProvider>
+        <App />
+      </LanguageProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3500,
+          style: { borderRadius: '12px', fontSize: '14px' },
+          success: { iconTheme: { primary: '#6366f1', secondary: '#fff' } },
+        }}
+      />
+    </Provider>
+  </ErrorBoundary>
+);
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <Provider store={store}>
-        <LanguageProvider>
-          <App />
-        </LanguageProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3500,
-            style: { borderRadius: '12px', fontSize: '14px' },
-            success: { iconTheme: { primary: '#6366f1', secondary: '#fff' } },
-          }}
-        />
-      </Provider>
-    </ErrorBoundary>
+    {appTree}
   </React.StrictMode>
 );

@@ -18,6 +18,7 @@ const adminRoutes = require('./routes/admin');
 const reviewRoutes = require('./routes/reviews');
 const couponRoutes = require('./routes/coupons');
 const uploadRoutes = require('./routes/upload');
+const contactRoutes = require('./routes/contact');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "img-src": ["'self'", 'data:', 'blob:', 'https:'],
+      "media-src": ["'self'", 'data:', 'blob:', 'https:'],
       "connect-src": ["'self'", 'https:', 'wss:'],
     },
   },
@@ -94,6 +96,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

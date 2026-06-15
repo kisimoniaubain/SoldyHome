@@ -21,7 +21,7 @@ export default function Login() {
     const result = await dispatch(loginUser(form));
     if (loginUser.fulfilled.match(result)) {
       toast.success(`Welcome back, ${result.payload.user.name}!`);
-      navigate(result.payload.user.role === 'admin' ? '/admin' : '/');
+      navigate('/');
     } else if (loginUser.rejected.match(result)) {
       toast.error(result.payload || 'Login failed');
     }
@@ -32,7 +32,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-fit mx-auto mb-4">
-            <BrandLogo compact />
+            <BrandLogo compact theme="auto" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{t('auth.welcomeBack', 'Welcome back')}</h1>
           <p className="text-gray-500 mt-1">
@@ -91,7 +91,18 @@ export default function Login() {
             <Link to="/register" className="text-primary-600 font-medium hover:underline">{t('auth.createOne', 'Create one')}</Link>
           </p>
         </div>
+
+        <div className="mt-5 flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+          <Link to="/privacy-policy" className="hover:text-gray-700 dark:hover:text-gray-200 hover:underline">
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link to="/terms-and-conditions" className="hover:text-gray-700 dark:hover:text-gray-200 hover:underline">
+            Terms & Conditions
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
+

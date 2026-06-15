@@ -1,18 +1,38 @@
 import { applyImageFallback, normalizeImageUrl } from '../utils/imageUrl';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import furnitureProducts from '../data/furnitureProducts';
 import { Star, ArrowRight, CheckCircle, Heart, Truck, Award, Users, Phone, Mail, MapPin, ChevronDown, Menu, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import BrandLogo from '../components/BrandLogo';
+import emailjs from '@emailjs/browser';
+import toast from 'react-hot-toast';
+import api from '../services/api';
+import { isVideoUrl } from '../utils/imageUrl';
+import { logout } from '../redux/slices/authSlice';
 
 export default function Explore() {
+  const dispatch = useDispatch();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useSelector((s) => s.auth);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
+  const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  const displayName = String(user?.name || user?.fullName || 'Kisimoni Aubain');
+  const displayInitial = String(displayName[0] || 'K').toUpperCase();
+
+  const handleNavbarLogout = () => {
+    dispatch(logout());
+    setMobileMenuOpen(false);
+    setUserMenuOpen(false);
+    navigate('/login', { replace: true });
+  };
 
   const heroImages = [
     'https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=1200',
@@ -80,6 +100,48 @@ export default function Explore() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    if (!contactForm.name || !contactForm.email || !contactForm.subject || !contactForm.message) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_0n7u9ra';
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_o47h07g';
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'w9H1Onw0PA9CSEtYf';
+
+    try {
+      setSendingMessage(true);
+      const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(contactForm.name)}&background=random`;
+
+      try {
+        await emailjs.send(
+          serviceId,
+          templateId,
+          {
+            user_name: contactForm.name,
+            user_email: contactForm.email,
+            subject: contactForm.subject,
+            message: contactForm.message,
+            avatar,
+          },
+          { publicKey }
+        );
+      } catch (emailJsError) {
+        // Fallback to backend SMTP endpoint if EmailJS fails.
+        await api.post('/contact', contactForm);
+      }
+
+      toast.success('Message sent successfully');
+      setContactForm({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Message failed to send. Please try again in a moment.');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Custom Navbar */}
@@ -109,7 +171,7 @@ export default function Explore() {
                   }}
                   className={`text-sm font-medium transition-colors ${
                     activeSection === item.id
-                      ? 'text-amber-700 font-bold'
+                      ? 'text-[#b45309] font-bold'
                       : 'text-white/80 hover:text-white'
                   }`}
                 >
@@ -118,13 +180,77 @@ export default function Explore() {
               ))}
             </div>
 
-            {/* Shop Now Button */}
-            <Link
-              to="/products"
-              className="hidden md:inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2 rounded-xl transition-colors text-sm"
-            >
-              Shop Now <ArrowRight size={16} />
-            </Link>
+            {/* Shop Now + User Quick Links */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                to="/products"
+                className="inline-flex items-center gap-2 bg-[#b45309] hover:bg-[#b45309] text-white font-bold px-6 py-2 rounded-xl transition-colors text-sm"
+              >
+                Shop Now <ArrowRight size={16} />
+              </Link>
+
+              {user && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setUserMenuOpen((prev) => !prev)}
+                    className="flex items-center gap-2 text-sm text-white/90 border border-white/20 rounded-xl px-3 py-2 bg-white/5 hover:bg-white/10 transition-colors"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-white/20 text-white text-xs font-bold flex items-center justify-center">
+                      {displayInitial}
+                    </span>
+                    <span className="font-semibold max-w-[130px] truncate">{displayName}</span>
+                    <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl py-2 z-50 animate-fade-in">
+                      <Link
+                        to="/profile"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-gray-700 dark:text-white/90 hover:text-[#b45309] dark:hover:text-[#b45309] hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+                      >
+                        Profile
+                      </Link>
+                      <Link
+                        to="/orders"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-gray-700 dark:text-white/90 hover:text-[#b45309] dark:hover:text-[#b45309] hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+                      >
+                        My Orders
+                      </Link>
+                      <Link
+                        to="/settings"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-gray-700 dark:text-white/90 hover:text-[#b45309] dark:hover:text-[#b45309] hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+                      >
+                        Settings
+                      </Link>
+
+                      {user.role === 'admin' && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="block px-4 py-2.5 text-sm text-[#b45309] font-semibold hover:text-white hover:bg-[#b45309] transition-all"
+                        >
+                          Admin Panel
+                        </Link>
+                      )}
+
+                      <div className="my-1 border-t border-gray-200 dark:border-gray-600" />
+
+                      <button
+                        type="button"
+                        onClick={handleNavbarLogout}
+                        className="block w-full text-left px-4 py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-white/5 transition-all"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Mobile Menu Button */}
             <button
@@ -154,17 +280,35 @@ export default function Explore() {
                     document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
                     setMobileMenuOpen(false);
                   }}
-                  className="block text-white/80 hover:text-amber-400 px-4 py-2 text-sm"
+                  className="block text-white/80 hover:text-[#b45309] px-4 py-2 text-sm"
                 >
                   {item.label}
                 </a>
               ))}
               <Link
                 to="/products"
-                className="block bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded-lg text-sm text-center"
+                className="block bg-[#b45309] hover:bg-[#b45309] text-white font-bold px-4 py-2 rounded-lg text-sm text-center"
               >
                 Shop Now
               </Link>
+
+              {user && (
+                <div className="mt-2 border border-white/20 rounded-lg p-3 bg-white/5 text-white/90 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-white/20 text-xs font-bold flex items-center justify-center">{displayInitial}</span>
+                    <span className="text-sm font-semibold truncate">{displayName}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="px-2 py-1 rounded hover:bg-white/10">Profile</Link>
+                    <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="px-2 py-1 rounded hover:bg-white/10">My Orders</Link>
+                    <Link to="/settings" onClick={() => setMobileMenuOpen(false)} className="px-2 py-1 rounded hover:bg-white/10">Settings</Link>
+                    {user.role === 'admin' && (
+                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-2 py-1 rounded hover:bg-white/10">Admin Panel</Link>
+                    )}
+                    <button type="button" onClick={handleNavbarLogout} className="px-2 py-1 rounded hover:bg-white/10">Logout</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -188,14 +332,14 @@ export default function Explore() {
         <div className="relative h-full flex items-center justify-center text-center text-white px-4">
           <div className="max-w-2xl">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 leading-tight">
-              Welcome to <span className="text-amber-400">Soldy</span><span className="text-amber-700">Home</span>
+              Welcome to <span className="text-[#b45309]">Soldy</span><span className="text-[#b45309]">Home</span>
             </h1>
             <p className="text-lg sm:text-xl text-white/90 mb-8">
               Discover beautifully designed furniture that transforms houses into homes
             </p>
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold px-8 py-4 rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 bg-[#b45309] hover:bg-[#b45309] text-white font-bold px-8 py-4 rounded-xl transition-colors"
             >
               Shop Now <ArrowRight size={20} />
             </Link>
@@ -209,7 +353,7 @@ export default function Explore() {
               key={idx}
               onClick={() => setCurrentImageIndex(idx)}
               className={`w-3 h-3 rounded-full transition-all ${
-                idx === currentImageIndex ? 'bg-amber-500 w-8' : 'bg-white/50'
+                idx === currentImageIndex ? 'bg-[#b45309] w-8' : 'bg-white/50'
               }`}
             />
           ))}
@@ -232,15 +376,15 @@ export default function Explore() {
               </p>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <CheckCircle size={24} className="text-amber-600 flex-shrink-0" />
+                  <CheckCircle size={24} className="text-[#b45309] flex-shrink-0" />
                   <span className="text-gray-700">Curated by design experts</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle size={24} className="text-amber-600 flex-shrink-0" />
+                  <CheckCircle size={24} className="text-[#b45309] flex-shrink-0" />
                   <span className="text-gray-700">Quality guaranteed on every piece</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle size={24} className="text-amber-600 flex-shrink-0" />
+                  <CheckCircle size={24} className="text-[#b45309] flex-shrink-0" />
                   <span className="text-gray-700">Affordable luxury for modern living</span>
                 </div>
               </div>
@@ -263,7 +407,7 @@ export default function Explore() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {whyChooseUs.map(({ icon: Icon, title, desc }) => (
               <div key={title} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/15 transition-all duration-300">
-                <div className="w-12 h-12 bg-amber-600 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-[#b45309] rounded-lg flex items-center justify-center mb-4">
                   <Icon size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{title}</h3>
@@ -285,16 +429,26 @@ export default function Explore() {
                 to={`/product/${product._id}`}
                 className="group relative rounded-xl overflow-hidden h-[300px] bg-gray-100"
               >
-                <img
-                  src={normalizeImageUrl(product.images?.[0]) || 'https://via.placeholder.com/400'}
-                  alt={product.name}
-                  onError={(e) => applyImageFallback(e, 0)}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
+                {isVideoUrl(product.images?.[0]) ? (
+                  <video
+                    src={normalizeImageUrl(product.images?.[0])}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={normalizeImageUrl(product.images?.[0]) || 'https://via.placeholder.com/400'}
+                    alt={product.name}
+                    onError={(e) => applyImageFallback(e, 0)}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
                   <div className="text-white">
                     <h3 className="text-xl font-bold">{product.name}</h3>
-                    <p className="text-amber-400 font-semibold">KSh {(product.discountPrice || product.price).toLocaleString()}</p>
+                    <p className="text-[#b45309] font-semibold">KSh {(product.discountPrice || product.price).toLocaleString()}</p>
                   </div>
                 </div>
               </Link>
@@ -303,7 +457,7 @@ export default function Explore() {
           <div className="text-center">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold px-8 py-3 rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 bg-[#b45309] hover:bg-[#b45309] text-white font-bold px-8 py-3 rounded-xl transition-colors"
             >
               View All Collections <ArrowRight size={18} />
             </Link>
@@ -317,7 +471,7 @@ export default function Explore() {
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">Get In Touch</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             <div className="text-center">
-              <div className="w-16 h-16 bg-amber-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[#b45309] rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Phone size={32} className="text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2">Call Us</h3>
@@ -326,7 +480,7 @@ export default function Explore() {
               <p className="text-sm text-white/60 mt-2">Monday - Friday, 9AM - 6PM</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-amber-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[#b45309] rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Mail size={32} className="text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2">Email Us</h3>
@@ -335,7 +489,7 @@ export default function Explore() {
               <p className="text-sm text-white/60 mt-2">We respond within 24 hours</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-amber-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[#b45309] rounded-xl flex items-center justify-center mx-auto mb-4">
                 <MapPin size={32} className="text-white" />
               </div>
               <h3 className="text-xl font-bold mb-2">Visit Us</h3>
@@ -347,34 +501,47 @@ export default function Explore() {
 
           {/* Contact Form */}
           <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8">
-            <form className="space-y-4">
+            <form onSubmit={handleContactSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
+                  value={contactForm.name}
+                  onChange={(e) => setContactForm((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="Your Name"
-                  className="bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-amber-600"
+                  required
+                  className="bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#b45309]"
                 />
                 <input
                   type="email"
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm((prev) => ({ ...prev, email: e.target.value }))}
                   placeholder="Your Email"
-                  className="bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-amber-600"
+                  required
+                  className="bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#b45309]"
                 />
               </div>
               <input
                 type="text"
+                value={contactForm.subject}
+                onChange={(e) => setContactForm((prev) => ({ ...prev, subject: e.target.value }))}
                 placeholder="Subject"
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-amber-600"
+                required
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#b45309]"
               />
               <textarea
+                value={contactForm.message}
+                onChange={(e) => setContactForm((prev) => ({ ...prev, message: e.target.value }))}
                 placeholder="Your Message"
                 rows={4}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-amber-600 resize-none"
+                required
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#b45309] resize-none"
               ></textarea>
               <button
                 type="submit"
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-3 rounded-lg transition-colors"
+                disabled={sendingMessage}
+                className="w-full bg-[#b45309] hover:bg-[#b45309] text-white font-bold px-6 py-3 rounded-lg transition-colors"
               >
-                Send Message
+                {sendingMessage ? 'Sending...' : 'Send Message'}
               </button>
             </form>
           </div>
@@ -401,7 +568,7 @@ export default function Explore() {
                 </div>
                 <div className="flex gap-1 mb-3">
                   {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} size={16} className="fill-amber-400 text-amber-400" />
+                    <Star key={i} size={16} className="fill-[#b45309] text-[#b45309]" />
                   ))}
                 </div>
                 <p className="text-gray-700 leading-relaxed">{testimonial.text}</p>
@@ -412,7 +579,7 @@ export default function Explore() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 sm:py-20 px-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white">
+      <section className="py-16 sm:py-20 px-4 bg-gradient-to-r from-[#b45309] to-[#b45309] text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Transform Your Space?</h2>
           <p className="text-lg text-white/90 mb-8">
@@ -420,7 +587,7 @@ export default function Explore() {
           </p>
           <Link
             to="/products"
-            className="inline-flex items-center justify-center gap-2 bg-white text-amber-600 font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-white text-[#b45309] font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors"
           >
             Shop Now <ArrowRight size={18} />
           </Link>
@@ -445,10 +612,10 @@ export default function Explore() {
             <div>
               <h3 className="text-white font-bold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#home" className="hover:text-amber-400 transition-colors">Home</a></li>
-                <li><a href="#about" className="hover:text-amber-400 transition-colors">About</a></li>
-                <li><a href="#gallery" className="hover:text-amber-400 transition-colors">Gallery</a></li>
-                <li><a href="#contact" className="hover:text-amber-400 transition-colors">Contact</a></li>
+                <li><a href="#home" className="hover:text-[#b45309] transition-colors">Home</a></li>
+                <li><a href="#about" className="hover:text-[#b45309] transition-colors">About</a></li>
+                <li><a href="#gallery" className="hover:text-[#b45309] transition-colors">Gallery</a></li>
+                <li><a href="#contact" className="hover:text-[#b45309] transition-colors">Contact</a></li>
               </ul>
             </div>
 
@@ -456,10 +623,10 @@ export default function Explore() {
             <div>
               <h3 className="text-white font-bold mb-4">Shop</h3>
               <ul className="space-y-2 text-sm">
-                <li><Link to="/products" className="hover:text-amber-400 transition-colors">All Products</Link></li>
-                <li><Link to="/products?sort=popular" className="hover:text-amber-400 transition-colors">Best Sellers</Link></li>
-                <li><Link to="/wishlist" className="hover:text-amber-400 transition-colors">Wishlist</Link></li>
-                <li><Link to="/cart" className="hover:text-amber-400 transition-colors">Cart</Link></li>
+                <li><Link to="/products" className="hover:text-[#b45309] transition-colors">All Products</Link></li>
+                <li><Link to="/products?sort=popular" className="hover:text-[#b45309] transition-colors">Best Sellers</Link></li>
+                <li><Link to="/wishlist" className="hover:text-[#b45309] transition-colors">Wishlist</Link></li>
+                <li><Link to="/cart" className="hover:text-[#b45309] transition-colors">Cart</Link></li>
               </ul>
             </div>
 
@@ -467,17 +634,17 @@ export default function Explore() {
             <div>
               <h3 className="text-white font-bold mb-4">Info</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#contact" className="hover:text-amber-400 transition-colors">Contact Us</a></li>
-                <li><a href="/" className="hover:text-amber-400 transition-colors">Privacy Policy</a></li>
-                <li><a href="/" className="hover:text-amber-400 transition-colors">Terms & Conditions</a></li>
-                <li><a href="/" className="hover:text-amber-400 transition-colors">Returns</a></li>
+                <li><a href="#contact" className="hover:text-[#b45309] transition-colors">Contact Us</a></li>
+                <li><Link to="/privacy-policy" className="hover:text-[#b45309] transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms-and-conditions" className="hover:text-[#b45309] transition-colors">Terms & Conditions</Link></li>
+                <li><a href="/" className="hover:text-[#b45309] transition-colors">Returns</a></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-gray-700 pt-8">
             <p className="text-center text-sm text-white/60">
-              © 2026 <span className="text-amber-600">Soldy</span><span className="text-amber-700">Home</span>. All rights reserved.
+              © 2026 <span className="text-[#b45309]">Soldy</span><span className="text-[#b45309]">Home</span>. All rights reserved.
             </p>
           </div>
         </div>
@@ -485,3 +652,4 @@ export default function Explore() {
     </div>
   );
 }
+

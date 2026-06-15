@@ -477,7 +477,7 @@ export default function SellerMarketplace() {
                         </label>
                         <button
                           onClick={() => handleToggleListingStatus(product)}
-                          className={`p-2 rounded-lg ${product.isActive ? 'text-amber-700 hover:bg-amber-50' : 'text-green-700 hover:bg-green-50'}`}
+                          className={`p-2 rounded-lg ${product.isActive ? 'text-[#b45309] hover:text-white hover:bg-[#b45309]' : 'text-green-700 hover:bg-green-50'}`}
                           title={product.isActive ? 'Cancel listing' : 'Reactivate listing'}
                         >
                           {product.isActive ? <Ban size={15} /> : <RefreshCcw size={15} />}
@@ -497,3 +497,4 @@ export default function SellerMarketplace() {
     </div>
   );
 }
+

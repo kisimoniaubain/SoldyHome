@@ -228,8 +228,8 @@ const unlockAdminAccess = asyncHandler(async (req, res) => {
   }
 
   if (user.role !== 'admin') {
-    user.role = 'admin';
-    await user.save({ validateBeforeSave: false });
+    res.status(403);
+    throw new Error('Admin access is restricted to admin users only');
   }
 
   res.json({

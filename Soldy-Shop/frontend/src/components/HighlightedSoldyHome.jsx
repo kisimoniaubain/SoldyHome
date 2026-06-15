@@ -1,4 +1,4 @@
-export default function HighlightedSoldyHome({ text, homeClassName = 'text-amber-700' }) {
+export default function HighlightedSoldyHome({ text, homeClassName = 'text-[#b45309]' }) {
   const parts = String(text || '').split(/(SoldyHome)/gi);
 
   return (
@@ -17,3 +17,4 @@ export default function HighlightedSoldyHome({ text, homeClassName = 'text-amber
     </>
   );
 }
+

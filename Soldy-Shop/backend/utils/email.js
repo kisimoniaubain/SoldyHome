@@ -1,23 +1,46 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE,
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const getMailerConfig = () => {
+  const user = String(process.env.EMAIL_USER || '').trim();
+  const rawPass = String(process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || '').trim();
+  const pass = rawPass.replace(/\s+/g, '');
+  const service = String(process.env.EMAIL_SERVICE || '').trim() || undefined;
+  const host = String(process.env.EMAIL_HOST || '').trim() || undefined;
+  const port = Number(process.env.EMAIL_PORT || 587);
+
+  if (!user || !pass || pass.toLowerCase() === 'your_app_password' || pass.toLowerCase() === 'replace_with_16_char_google_app_password') {
+    throw new Error('Email is not configured. Set EMAIL_USER and a valid Gmail app password in EMAIL_APP_PASSWORD (or EMAIL_PASS).');
+  }
+
+  return {
+    service,
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  };
+};
+
+const getTransporter = () => nodemailer.createTransport(getMailerConfig());
 
 const sendEmail = async ({ to, subject, html }) => {
+  const transporter = getTransporter();
   const mailOptions = {
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to,
     subject,
     html,
   };
-  await transporter.sendMail(mailOptions);
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    const message = String(error?.message || '').toLowerCase();
+    if (message.includes('badcredentials') || message.includes('invalid login') || message.includes('535')) {
+      throw new Error('Gmail rejected login. Use a Google App Password (16 characters) in EMAIL_APP_PASSWORD and confirm 2-Step Verification is enabled on the Gmail account.');
+    }
+    throw error;
+  }
 };
 
 const sendOrderConfirmation = async (order, user) => {

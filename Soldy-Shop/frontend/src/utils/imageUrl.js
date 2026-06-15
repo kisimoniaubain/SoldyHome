@@ -38,6 +38,12 @@ export const normalizeProductImages = (images) => {
   return normalized.length ? normalized : [getFallbackImage(0)];
 };
 
+export const isVideoUrl = (value) => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return false;
+  return /(\.mp4|\.mov|\.webm|\.m4v)(\?|#|$)/.test(raw) || raw.includes('/video/upload/');
+};
+
 export const applyImageFallback = (event, index = 0) => {
   const el = event?.currentTarget;
   if (!el || el.dataset.fallbackApplied === '1') return;

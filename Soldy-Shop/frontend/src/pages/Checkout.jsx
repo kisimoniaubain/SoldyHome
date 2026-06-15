@@ -281,9 +281,14 @@ export default function Checkout() {
         <div className="card p-4 sm:p-5 space-y-3 h-fit">
           <h3 className="font-bold text-gray-900">Order Summary</h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
+    import { isVideoUrl } from '../utils/imageUrl';
             {items.map((i) => (
               <div key={i._id} className="flex items-center gap-2">
-                <img src={i.product?.images?.[0] || 'https://placehold.co/40x40'} className="w-10 h-10 rounded-lg object-cover" alt="" />
+                {isVideoUrl(i.product?.images?.[0]) ? (
+                  <video src={i.product?.images?.[0]} className="w-10 h-10 rounded-lg object-cover" muted playsInline preload="metadata" />
+                ) : (
+                  <img src={i.product?.images?.[0] || 'https://placehold.co/40x40'} className="w-10 h-10 rounded-lg object-cover" alt="" />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-700 truncate">{i.product?.name || 'Product'}</p>
                   <p className="text-xs text-gray-500">x{i.qty}</p>

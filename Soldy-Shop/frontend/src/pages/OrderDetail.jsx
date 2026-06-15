@@ -7,7 +7,7 @@ import { ChevronLeft, MapPin, Package, CreditCard, Truck } from 'lucide-react';
 
 const STATUS_STEPS = ['pending', 'paid', 'processing', 'shipped', 'delivered'];
 const STATUS_COLORS = {
-  pending: 'bg-yellow-100 text-yellow-700',
+  pending: 'bg-[#b45309] text-white',
   paid: 'bg-blue-100 text-blue-700',
   processing: 'bg-purple-100 text-purple-700',
   shipped: 'bg-orange-100 text-orange-700',
@@ -126,3 +126,4 @@ export default function OrderDetail() {
     </div>
   );
 }
+

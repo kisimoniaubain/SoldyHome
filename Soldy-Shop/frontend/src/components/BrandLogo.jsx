@@ -4,16 +4,20 @@ export default function BrandLogo({
   iconOnly = false,
   homeClassName,
 }) {
+  const isAuto = theme === 'auto';
   const isDark = theme === 'dark';
-  const textPrimary = isDark ? 'text-white' : 'text-gray-900';
-  const textAccent = homeClassName || (isDark ? 'text-amber-300' : 'text-amber-700');
-  const iconContainer = isDark
-    ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-orange-900/30'
-    : 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-300/50';
+  const textPrimary = isAuto ? 'text-gray-900 dark:text-white' : (isDark ? 'text-white' : 'text-gray-900');
+  const textAccent = homeClassName || (isAuto ? 'text-[#b45309] dark:text-[#b45309]' : (isDark ? 'text-[#b45309]' : 'text-[#b45309]'));
+  const iconContainer = isAuto
+    ? 'bg-gradient-to-br from-[#b45309] to-orange-500 dark:from-[#b45309] dark:to-orange-600'
+    : (isDark
+      ? 'bg-gradient-to-br from-[#b45309] to-orange-600'
+      : 'bg-gradient-to-br from-[#b45309] to-orange-500');
+  const subtitleClass = isAuto ? 'text-gray-500 dark:text-gray-400' : (isDark ? 'text-gray-400' : 'text-gray-500');
 
   return (
     <div className="flex items-center gap-2.5">
-      <div className={`rounded-xl flex items-center justify-center shadow-md ${iconContainer} ${compact ? 'w-9 h-9' : 'w-10 h-10'}`}>
+      <div className={`rounded-xl flex items-center justify-center ${iconContainer} ${compact ? 'w-9 h-9' : 'w-10 h-10'}`}>
         <svg
           viewBox="0 0 64 64"
           className={compact ? 'w-5 h-5' : 'w-6 h-6'}
@@ -36,9 +40,10 @@ export default function BrandLogo({
             Soldy
             <span className={`${textAccent}`}>Home</span>
           </p>
-          {!compact && <p className={`text-[10px] uppercase tracking-[0.2em] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Furniture Studio</p>}
+          {!compact && <p className={`text-[10px] uppercase tracking-[0.2em] ${subtitleClass}`}>Furniture Studio</p>}
         </div>
       )}
     </div>
   );
 }
+

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../redux/slices/cartSlice';
 import { toggleWishlist } from '../redux/slices/wishlistSlice';
 import { ShoppingCart, Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
-import { applyImageFallback, normalizeProductImages } from '../utils/imageUrl';
+import { applyImageFallback, isVideoUrl, normalizeProductImages } from '../utils/imageUrl';
 
 export default function ProductCard({ product }) {
   const dispatch = useDispatch();
@@ -64,12 +64,22 @@ export default function ProductCard({ product }) {
         onMouseEnter={() => setIsCarouselPaused(true)}
         onMouseLeave={() => setIsCarouselPaused(false)}
       >
-        <img
-          src={images[activeImage]}
-          alt={product.name}
-          onError={(e) => applyImageFallback(e, activeImage)}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {isVideoUrl(images[activeImage]) ? (
+          <video
+            src={images[activeImage]}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            muted
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <img
+            src={images[activeImage]}
+            alt={product.name}
+            onError={(e) => applyImageFallback(e, activeImage)}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        )}
         {images.length > 1 && (
           <>
             <button
@@ -141,13 +151,24 @@ export default function ProductCard({ product }) {
             {previewThumbs.map((img, idx) => {
               const isActiveThumb = images[activeImage] === img;
               return (
-              <img
-                key={`${product._id}-thumb-${idx}`}
-                src={img}
-                alt={`${product.name} ${idx + 1}`}
-                onError={(e) => applyImageFallback(e, idx)}
-                className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md border object-cover ${isActiveThumb ? 'border-primary-500 ring-1 ring-primary-400' : 'border-gray-200'}`}
-              />
+              isVideoUrl(img) ? (
+                <video
+                  key={`${product._id}-thumb-${idx}`}
+                  src={img}
+                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md border object-cover ${isActiveThumb ? 'border-primary-500 ring-1 ring-primary-400' : 'border-gray-200'}`}
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  key={`${product._id}-thumb-${idx}`}
+                  src={img}
+                  alt={`${product.name} ${idx + 1}`}
+                  onError={(e) => applyImageFallback(e, idx)}
+                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md border object-cover ${isActiveThumb ? 'border-primary-500 ring-1 ring-primary-400' : 'border-gray-200'}`}
+                />
+              )
               );
             })}
             {remainingThumbs > 0 && (
@@ -161,7 +182,7 @@ export default function ProductCard({ product }) {
         {/* Rating */}
         {product.numReviews > 0 && (
           <div className="flex items-center gap-1">
-            <Star size={12} className="text-yellow-400 fill-yellow-400" />
+            <Star size={12} className="text-[#b45309] fill-[#b45309]" />
             <span className="text-xs text-gray-600">{product.rating?.toFixed(1)} ({product.numReviews})</span>
           </div>
         )}
@@ -194,3 +215,4 @@ export default function ProductCard({ product }) {
     </Link>
   );
 }
+

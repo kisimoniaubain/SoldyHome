@@ -34,12 +34,49 @@ const clearBrokenAuthIfNeeded = (err) => {
 };
 
 const findProduct = (productId) => furnitureProducts.find((p) => p._id === productId);
+const isStaticProductId = (productId) => Boolean(findProduct(productId));
+
+const getItemProductId = (item) => item?.product?._id || item?.product;
+
+const mergeCarts = (serverCart, localCart) => {
+  const merged = {
+    items: [],
+    couponDiscount: serverCart?.couponDiscount || 0,
+    coupon: serverCart?.coupon || null,
+  };
+
+  const byId = new Map();
+  [...(serverCart?.items || []), ...(localCart?.items || [])].forEach((item) => {
+    const productId = getItemProductId(item);
+    if (!productId) return;
+
+    if (byId.has(productId)) {
+      const prev = byId.get(productId);
+      byId.set(productId, {
+        ...prev,
+        qty: (prev.qty || 0) + (item.qty || 0),
+        product: prev.product || item.product,
+      });
+      return;
+    }
+
+    byId.set(productId, { ...item });
+  });
+
+  merged.items = Array.from(byId.values());
+  return merged;
+};
+
+const loadServerCart = async () => {
+  const res = await api.get('/cart');
+  return res.data.cart;
+};
 
 export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithValue }) => {
   try {
     if (!localStorage.getItem('soldyToken')) return loadLocalCart();
-    const res = await api.get('/cart');
-    return res.data.cart;
+    const serverCart = await loadServerCart();
+    return mergeCarts(serverCart, loadLocalCart());
   } catch (err) {
     if (shouldUseLocalFallback(err)) {
       clearBrokenAuthIfNeeded(err);
@@ -51,7 +88,9 @@ export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithVa
 
 export const addToCart = createAsyncThunk('cart/add', async ({ productId, qty = 1 }, { rejectWithValue }) => {
   try {
-    if (!localStorage.getItem('soldyToken')) {
+    const hasToken = Boolean(localStorage.getItem('soldyToken'));
+
+    if (!hasToken || isStaticProductId(productId)) {
       const cart = loadLocalCart();
       const product = findProduct(productId);
       if (!product) return rejectWithValue('Product not found');
@@ -65,12 +104,22 @@ export const addToCart = createAsyncThunk('cart/add', async ({ productId, qty = 
       });
       saveLocalCart(cart);
       toast.success('Added to cart!');
+
+      if (hasToken) {
+        try {
+          const serverCart = await loadServerCart();
+          return mergeCarts(serverCart, cart);
+        } catch {
+          // Keep local static items visible even when server cart request fails.
+        }
+      }
+
       return cart;
     }
 
     const res = await api.post('/cart', { productId, qty });
     toast.success('Added to cart!');
-    return res.data.cart;
+    return mergeCarts(res.data.cart, loadLocalCart());
   } catch (err) {
     if (shouldUseLocalFallback(err)) {
       clearBrokenAuthIfNeeded(err);
@@ -96,17 +145,29 @@ export const addToCart = createAsyncThunk('cart/add', async ({ productId, qty = 
 
 export const updateCartQty = createAsyncThunk('cart/updateQty', async ({ productId, qty }, { rejectWithValue }) => {
   try {
-    if (!localStorage.getItem('soldyToken')) {
+    const hasToken = Boolean(localStorage.getItem('soldyToken'));
+
+    if (!hasToken || isStaticProductId(productId)) {
       const cart = loadLocalCart();
       cart.items = cart.items
         .map((i) => ((i.product?._id || i.product) === productId ? { ...i, qty: Math.max(1, qty) } : i))
         .filter((i) => i.qty > 0);
       saveLocalCart(cart);
+
+      if (hasToken) {
+        try {
+          const serverCart = await loadServerCart();
+          return mergeCarts(serverCart, cart);
+        } catch {
+          // Fall back to local copy when server cart is unavailable.
+        }
+      }
+
       return cart;
     }
 
     const res = await api.put(`/cart/${productId}`, { qty });
-    return res.data.cart;
+    return mergeCarts(res.data.cart, loadLocalCart());
   } catch (err) {
     if (shouldUseLocalFallback(err)) {
       clearBrokenAuthIfNeeded(err);
@@ -123,17 +184,29 @@ export const updateCartQty = createAsyncThunk('cart/updateQty', async ({ product
 
 export const removeFromCart = createAsyncThunk('cart/remove', async (productId, { rejectWithValue }) => {
   try {
-    if (!localStorage.getItem('soldyToken')) {
+    const hasToken = Boolean(localStorage.getItem('soldyToken'));
+
+    if (!hasToken || isStaticProductId(productId)) {
       const cart = loadLocalCart();
       cart.items = cart.items.filter((i) => (i.product?._id || i.product) !== productId);
       saveLocalCart(cart);
       toast.success('Removed from cart');
+
+      if (hasToken) {
+        try {
+          const serverCart = await loadServerCart();
+          return mergeCarts(serverCart, cart);
+        } catch {
+          // Keep local cart changes even when server cart fetch fails.
+        }
+      }
+
       return cart;
     }
 
     const res = await api.delete(`/cart/${productId}`);
     toast.success('Removed from cart');
-    return res.data.cart;
+    return mergeCarts(res.data.cart, loadLocalCart());
   } catch (err) {
     if (shouldUseLocalFallback(err)) {
       clearBrokenAuthIfNeeded(err);
@@ -149,13 +222,15 @@ export const removeFromCart = createAsyncThunk('cart/remove', async (productId, 
 
 export const clearCart = createAsyncThunk('cart/clear', async (_, { rejectWithValue }) => {
   try {
+    const empty = { items: [], couponDiscount: 0, coupon: null };
+
     if (!localStorage.getItem('soldyToken')) {
-      const empty = { items: [], couponDiscount: 0, coupon: null };
       saveLocalCart(empty);
       return null;
     }
 
     await api.delete('/cart');
+    saveLocalCart(empty);
     return null;
   } catch (err) {
     if (shouldUseLocalFallback(err)) {

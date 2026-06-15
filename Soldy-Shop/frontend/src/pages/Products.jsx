@@ -36,12 +36,11 @@ export default function Products() {
   const page = Number(searchParams.get('page')) || 1;
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
-  const topFurniture = [...furnitureProducts]
-    .filter((p) => p.isActive)
+  const showcaseSource = furnitureProducts.filter((p) => p.isActive);
+  const topFurniture = [...showcaseSource]
     .sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0))
     .slice(0, 8);
-  const furniturePhotoShowcase = furnitureProducts
-    .filter((p) => p.isActive)
+  const furniturePhotoShowcase = showcaseSource
     .flatMap((p) =>
       (p.images || []).map((img, idx) => ({
         id: `${p._id}-${idx}`,
@@ -172,7 +171,7 @@ export default function Products() {
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
               data-sort-dropdown="button"
-              className="w-full sm:w-auto flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:border-amber-400 hover:shadow-md transition-all duration-200"
+              className="w-full sm:w-auto flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:border-[#b45309] hover:shadow-md transition-all duration-200"
             >
               <span className="flex items-center gap-2">
                 {(() => {
@@ -180,7 +179,7 @@ export default function Products() {
                   const Icon = current?.icon || Clock;
                   return (
                     <>
-                      <Icon size={16} className="text-amber-600" />
+                      <Icon size={16} className="text-[#b45309]" />
                       <span className="hidden sm:inline">{current?.label || 'Sort'}</span>
                       <span className="sm:hidden text-xs">Sort</span>
                     </>
@@ -205,11 +204,11 @@ export default function Products() {
                       }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all duration-200 text-left ${
                         isActive
-                          ? 'bg-amber-50 text-amber-700 font-semibold border-l-4 border-amber-600'
+                          ? 'bg-[#b45309] text-white font-semibold border-l-4 border-white'
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      <Icon size={18} className={isActive ? 'text-amber-600' : 'text-gray-500'} />
+                      <Icon size={18} className={isActive ? 'text-white' : 'text-gray-500'} />
                       <span>{option.label}</span>
                     </button>
                   );
@@ -476,3 +475,4 @@ export default function Products() {
     </div>
   );
 }
+

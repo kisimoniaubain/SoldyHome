@@ -9,7 +9,7 @@ import StarRating from '../components/StarRating';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Truck, Shield, Star, ChevronLeft, ChevronRight, Plus, Minus } from 'lucide-react';
-import { applyImageFallback, normalizeProductImages } from '../utils/imageUrl';
+import { applyImageFallback, isVideoUrl, normalizeProductImages } from '../utils/imageUrl';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -68,12 +68,22 @@ export default function ProductDetail() {
         {/* Images */}
         <div className="space-y-3">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-50">
-            <img
-              src={images[imgIndex]}
-              alt={product.name}
-              onError={(e) => applyImageFallback(e, imgIndex)}
-              className="w-full h-full object-cover"
-            />
+            {isVideoUrl(images[imgIndex]) ? (
+              <video
+                src={images[imgIndex]}
+                className="w-full h-full object-cover"
+                controls
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={images[imgIndex]}
+                alt={product.name}
+                onError={(e) => applyImageFallback(e, imgIndex)}
+                className="w-full h-full object-cover"
+              />
+            )}
             {images.length > 1 && (
               <>
                 <button onClick={() => setImgIndex((p) => (p - 1 + images.length) % images.length)}
@@ -92,12 +102,16 @@ export default function ProductDetail() {
               {images.map((img, i) => (
                 <button key={i} onClick={() => setImgIndex(i)}
                   className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === imgIndex ? 'border-primary-600' : 'border-transparent'}`}>
-                  <img
-                    src={img}
-                    alt=""
-                    onError={(e) => applyImageFallback(e, i)}
-                    className="w-full h-full object-cover"
-                  />
+                  {isVideoUrl(img) ? (
+                    <video src={img} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                  ) : (
+                    <img
+                      src={img}
+                      alt=""
+                      onError={(e) => applyImageFallback(e, i)}
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </button>
               ))}
             </div>
@@ -182,7 +196,7 @@ export default function ProductDetail() {
             <div className="flex items-center gap-2 mb-4">
               {[1, 2, 3, 4, 5].map((r) => (
                 <button key={r} type="button" onClick={() => setReviewRating(r)}>
-                  <Star size={24} className={r <= reviewRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'} />
+                  <Star size={24} className={r <= reviewRating ? 'text-[#b45309] fill-[#b45309]' : 'text-gray-200'} />
                 </button>
               ))}
             </div>
@@ -225,3 +239,4 @@ export default function ProductDetail() {
     </div>
   );
 }
+

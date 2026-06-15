@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { toggleWishlist } from '../redux/slices/wishlistSlice';
 import { addToCart } from '../redux/slices/cartSlice';
 import { Heart, ShoppingCart } from 'lucide-react';
-import { applyImageFallback, normalizeImageUrl } from '../utils/imageUrl';
+import { applyImageFallback, isVideoUrl, normalizeImageUrl } from '../utils/imageUrl';
 
 export default function Wishlist() {
   const { items } = useSelector((s) => s.wishlist);
@@ -26,9 +26,19 @@ export default function Wishlist() {
             <div key={product._id} className="card overflow-hidden group hover:shadow-md transition-shadow">
               <div className="relative aspect-square overflow-hidden bg-gray-50">
                 <Link to={`/products/${product._id}`}>
-                  <img src={normalizeImageUrl(product.images?.[0]) || 'https://placehold.co/300x300'} alt={product.name}
-                    onError={(e) => applyImageFallback(e, 0)}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {isVideoUrl(product.images?.[0]) ? (
+                    <video
+                      src={normalizeImageUrl(product.images?.[0])}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img src={normalizeImageUrl(product.images?.[0]) || 'https://placehold.co/300x300'} alt={product.name}
+                      onError={(e) => applyImageFallback(e, 0)}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  )}
                 </Link>
                 <button onClick={() => dispatch(toggleWishlist(product))}
                   className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow">

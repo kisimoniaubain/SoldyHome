@@ -17,6 +17,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { isVideoUrl } from '../../utils/imageUrl';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -70,7 +71,7 @@ export default function AdminDashboard() {
       value: stats.totalProducts,
       sub: 'Catalog items currently active',
       icon: Package,
-      color: 'from-amber-500 to-orange-600',
+      color: 'from-[#b45309] to-orange-600',
     },
     {
       label: 'Customers',
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
     <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
       <section className="relative overflow-hidden rounded-3xl border border-gray-800 bg-gradient-to-r from-gray-900 via-gray-900 to-gray-800 p-5 sm:p-7">
         <div className="absolute -top-8 -right-8 w-36 h-36 bg-primary-600/20 rounded-full blur-2xl" />
-        <div className="absolute -bottom-12 -left-10 w-44 h-44 bg-amber-500/10 rounded-full blur-2xl" />
+        <div className="absolute -bottom-12 -left-10 w-44 h-44 bg-[#b45309] rounded-full blur-2xl" />
         <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-2">Operations Center</p>
@@ -150,16 +151,16 @@ export default function AdminDashboard() {
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {statCards.map(({ label, value, sub, icon: Icon, color }) => (
-          <div key={label} className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+          <div key={label} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg shadow-black/20`}>
                 <Icon size={18} className="text-white" />
               </div>
-              <ArrowUpRight size={16} className="text-gray-500" />
+              <ArrowUpRight size={16} className="text-gray-500 dark:text-gray-500" />
             </div>
-            <p className="text-2xl font-bold text-white leading-tight">{value}</p>
-            <p className="text-gray-400 text-sm mt-1">{label}</p>
-            <p className="text-xs text-gray-500 mt-2">{sub}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">{value}</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{label}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">{sub}</p>
           </div>
         ))}
       </div>
@@ -170,22 +171,22 @@ export default function AdminDashboard() {
           <Link
             key={to}
             to={to}
-            className="group bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-primary-500/50 hover:bg-gray-900/90 transition-all"
+            className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-primary-500/50 hover:bg-gray-50 dark:hover:bg-gray-900/90 transition-all"
           >
             <div className="w-10 h-10 rounded-xl bg-primary-600/20 text-primary-400 flex items-center justify-center mb-3 group-hover:bg-primary-600/30">
               <Icon size={18} />
             </div>
-            <h3 className="font-semibold text-white">{title}</h3>
-            <p className="text-sm text-gray-400 mt-1">{desc}</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{desc}</p>
           </Link>
         ))}
       </section>
 
       {/* Revenue chart */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 sm:p-6">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 sm:p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-semibold text-white">Revenue (Last 6 Months)</h2>
-          <span className="text-xs text-gray-500">KSh trend overview</span>
+          <h2 className="font-semibold text-gray-900 dark:text-white">Revenue (Last 6 Months)</h2>
+          <span className="text-xs text-gray-500 dark:text-gray-500">KSh trend overview</span>
         </div>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={stats.monthlyData}>
@@ -203,21 +204,21 @@ export default function AdminDashboard() {
 
       {/* Order status + Top products */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 sm:p-6">
-          <h2 className="font-semibold text-white mb-4">Order & Delivery Pipeline</h2>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 sm:p-6">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Order & Delivery Pipeline</h2>
           <div className="space-y-4">
             {(stats.ordersByStatus || []).map(({ _id, count }) => {
               const percent = Math.round((count / totalOps) * 100);
               return (
                 <div key={_id}>
                   <div className="flex items-center justify-between text-sm mb-1.5">
-                    <span className="text-gray-300 capitalize flex items-center gap-2">
-                      <Clock3 size={14} className="text-gray-500" /> {_id}
+                    <span className="text-gray-700 dark:text-gray-300 capitalize flex items-center gap-2">
+                      <Clock3 size={14} className="text-gray-500 dark:text-gray-500" /> {_id}
                     </span>
-                    <span className="text-gray-400">{count}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{count}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-gray-800 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-primary-500 to-amber-500" style={{ width: `${percent}%` }} />
+                  <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-primary-500 to-[#b45309]" style={{ width: `${percent}%` }} />
                   </div>
                 </div>
               );
@@ -225,23 +226,27 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 sm:p-6">
-          <h2 className="font-semibold text-white mb-4">Top Products</h2>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 sm:p-6">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Top Products</h2>
           <div className="space-y-3">
             {stats.topProducts?.map((p, i) => (
               <div key={p._id} className="flex items-center gap-3">
-                <span className="text-gray-500 text-sm w-5">{i + 1}.</span>
-                <img src={p.images?.[0] || 'https://placehold.co/32x32'} alt={p.name}
-                  className="w-8 h-8 rounded-lg object-cover" />
+                <span className="text-gray-500 dark:text-gray-500 text-sm w-5">{i + 1}.</span>
+                {isVideoUrl(p.images?.[0]) ? (
+                  <video src={p.images?.[0]} className="w-8 h-8 rounded-lg object-cover" muted playsInline preload="metadata" />
+                ) : (
+                  <img src={p.images?.[0] || 'https://placehold.co/32x32'} alt={p.name}
+                    className="w-8 h-8 rounded-lg object-cover" />
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{p.name}</p>
-                  <p className="text-xs text-gray-500">{p.soldCount} sold</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">{p.soldCount} sold</p>
                 </div>
                 <span className="text-sm font-bold text-primary-400">KSh {p.price?.toLocaleString()}</span>
               </div>
             ))}
             {!stats.topProducts?.length && (
-              <p className="text-sm text-gray-500">No product sales data yet.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-500">No product sales data yet.</p>
             )}
           </div>
         </div>
@@ -249,3 +254,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+

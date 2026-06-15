@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMe, logout, updateProfile } from '../redux/slices/authSlice';
-import api from '../services/api';
+import { logout, unlockAdminAccess, updateProfile } from '../redux/slices/authSlice';
 import toast from 'react-hot-toast';
 import { User, MapPin, Lock, Package, Trash2, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Profile() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((s) => s.auth);
   const [activeTab, setActiveTab] = useState('profile');
   const [profileForm, setProfileForm] = useState({
@@ -29,6 +29,13 @@ export default function Profile() {
     });
   }, [user]);
 
+  useEffect(() => {
+    const shouldUnlock = new URLSearchParams(location.search).get('adminUnlock') === '1';
+    if (shouldUnlock && user?.role === 'admin') {
+      setShowAdminModal(true);
+    }
+  }, [location.search, user?.role]);
+
   const forceRelogin = () => {
     dispatch(logout());
     setShowAdminModal(false);
@@ -45,14 +52,16 @@ export default function Profile() {
     }
 
     try {
-      await api.post('/auth/admin-access', { password: adminPassInput });
-      await dispatch(fetchMe());
+      const result = await dispatch(unlockAdminAccess(adminPassInput));
+      if (unlockAdminAccess.rejected.match(result)) {
+        throw new Error(result.payload || 'Failed to unlock admin access');
+      }
       setShowAdminModal(false);
       setAdminPassInput('');
       toast.success('Admin access granted');
       navigate('/admin');
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to unlock admin access';
+      const message = err?.message || err.response?.data?.message || 'Failed to unlock admin access';
       if (message.toLowerCase().includes('token failed') || message.toLowerCase().includes('no token')) {
         toast.error('Session expired. Please sign in again.');
         forceRelogin();
@@ -112,13 +121,15 @@ export default function Profile() {
             {user?.role}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAdminModal(true)}
-          className="btn-secondary ml-auto"
-        >
-          Admin Dashboard
-        </button>
+        {user?.role === 'admin' && (
+          <button
+            type="button"
+            onClick={() => setShowAdminModal(true)}
+            className="btn-secondary ml-auto"
+          >
+            Admin Dashboard
+          </button>
+        )}
       </div>
 
       {/* Tabs */}

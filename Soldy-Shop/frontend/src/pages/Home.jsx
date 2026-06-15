@@ -15,6 +15,23 @@ const features = [
   { icon: Zap, title: 'Fast Delivery', desc: 'Express and same-day options available in select locations.' },
 ];
 
+const suggestedFurnitureCategories = [
+  { label: 'Chairs', keyword: 'chair' },
+  { label: 'Tables', keyword: 'table' },
+  { label: 'Beds', keyword: 'bed' },
+  { label: 'Sofas / Salon', keyword: 'sofa' },
+  { label: 'Doors', keyword: 'door' },
+  { label: 'Windows', keyword: 'window' },
+  { label: 'Wardrobes', keyword: 'wardrobe' },
+  { label: 'Cabinets', keyword: 'cabinet' },
+  { label: 'Shelves', keyword: 'shelf' },
+  { label: 'TV Stands', keyword: 'tv stand' },
+  { label: 'Dining Sets', keyword: 'dining' },
+  { label: 'Office Furniture', keyword: 'office' },
+  { label: 'Outdoor Furniture', keyword: 'outdoor' },
+  { label: 'Kids Furniture', keyword: 'kids' },
+];
+
 export default function Home() {
   const dispatch = useDispatch();
   const { featured, categories, loading } = useSelector((s) => s.products);
@@ -38,13 +55,13 @@ export default function Home() {
             </span>
             <h1 className="text-[2rem] leading-tight sm:text-6xl font-extrabold mb-5 sm:mb-6">
               {t('home.heroTitle1', 'Curated Furniture,')}<br />
-              <span className="text-amber-700">{t('home.heroTitle2', 'Crafted For Living.')}</span>
+              <span className="text-[#b45309]">{t('home.heroTitle2', 'Crafted For Living.')}</span>
             </h1>
             <p className="text-base sm:text-lg text-white/80 mb-6 sm:mb-8 leading-relaxed">
               {t('home.heroDesc', 'Discover modern sofas, dining sets, bedroom pieces, and statement decor designed to elevate every room. Enjoy secure checkout with M-Pesa, Stripe, and more, plus fast delivery across Kenya.')}
             </p>
             <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4">
-              <Link to="/products" className="inline-flex items-center justify-center gap-2 bg-[#b45309] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#92400e] transition-colors w-full sm:w-auto shadow-md shadow-amber-900/20">
+              <Link to="/products" className="inline-flex items-center justify-center gap-2 bg-[#b45309] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#92400e] transition-colors w-full sm:w-auto shadow-md shadow-[#b45309]">
                 <ShoppingBag size={18} /> {t('common.shopNow', 'Shop Now')}
               </Link>
               <Link to="/products?sort=popular" className="inline-flex items-center justify-center gap-2 border-2 border-white/40 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors w-full sm:w-auto">
@@ -74,7 +91,7 @@ export default function Home() {
       </section>
 
       {/* Categories */}
-      {categories.length > 0 && (
+      {(categories.length > 0 || suggestedFurnitureCategories.length > 0) && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3 mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Shop by Category</h2>
@@ -82,8 +99,21 @@ export default function Home() {
               {t('common.viewAll', 'View all')} <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="flex flex-wrap gap-3">
-            {categories.map((cat) => (
+          <div className="flex flex-wrap gap-3 mb-4">
+            {suggestedFurnitureCategories.map((item) => (
+              <Link
+                key={item.label}
+                to={`/products?keyword=${encodeURIComponent(item.keyword)}`}
+                className="px-4 py-2 rounded-full text-sm font-medium text-gray-700 dark:text-[#b45309] border border-transparent hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/15 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {categories.map((cat) => (
               <Link
                 key={cat}
                 to={`/products?category=${encodeURIComponent(cat)}`}
@@ -91,8 +121,9 @@ export default function Home() {
               >
                 {cat}
               </Link>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -135,3 +166,4 @@ export default function Home() {
     </div>
   );
 }
+

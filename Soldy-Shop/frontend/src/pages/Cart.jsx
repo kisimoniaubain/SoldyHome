@@ -42,10 +42,10 @@ export default function Cart() {
       <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8">{t('cart.shoppingCart', 'Shopping Cart')} ({totalUnits})</h1>
 
       {isWebsiteMode && (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="mb-6 rounded-xl border border-[#b45309] bg-[#b45309] px-4 py-3 text-sm text-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <Info size={16} className="mt-0.5 shrink-0" />
           <p className="flex-1">{t('common.websiteModeActive', 'Website mode active')}: cart is saved locally on this device because your session token is unavailable or expired.</p>
-          <Link to="/login" className="text-xs font-semibold text-amber-900 border border-amber-300 bg-white/70 px-3 py-1.5 rounded-lg hover:bg-white w-fit">
+          <Link to="/login" className="text-xs font-semibold text-[#b45309] border border-[#b45309] bg-white/70 px-3 py-1.5 rounded-lg hover:bg-white w-fit">
             {t('common.reconnectAccount', 'Reconnect Account')}
           </Link>
         </div>
@@ -192,7 +192,7 @@ export default function Cart() {
                   <span>Cart summary should include subtotal, shipping fee, tax estimate, and final payable amount.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Tag size={16} className="text-amber-600 mt-0.5" />
+                  <Tag size={16} className="text-[#b45309] mt-0.5" />
                   <span>Delivery location, phone number, and coupon code (if any) should be ready before checkout.</span>
                 </li>
               </ul>
@@ -203,3 +203,4 @@ export default function Cart() {
     </div>
   );
 }
+

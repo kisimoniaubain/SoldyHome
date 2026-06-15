@@ -7,7 +7,7 @@ import { Package, ChevronRight, Info } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const STATUS_COLORS = {
-  pending: 'bg-yellow-100 text-yellow-700',
+  pending: 'bg-[#b45309] text-white',
   paid: 'bg-blue-100 text-blue-700',
   processing: 'bg-purple-100 text-purple-700',
   shipped: 'bg-orange-100 text-orange-700',
@@ -31,10 +31,10 @@ export default function Orders() {
       <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8">{t('orders.title', 'My Orders')}</h1>
 
       {isWebsiteMode && (
-        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="mb-6 rounded-xl border border-[#b45309] bg-[#b45309] px-4 py-3 text-sm text-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <Info size={16} className="mt-0.5 shrink-0" />
           <p className="flex-1">{t('common.websiteModeActive', 'Website mode active')}: showing orders saved locally on this device because your session token is unavailable or expired.</p>
-          <Link to="/login" className="text-xs font-semibold text-amber-900 border border-amber-300 bg-white/70 px-3 py-1.5 rounded-lg hover:bg-white w-fit">
+          <Link to="/login" className="text-xs font-semibold text-[#b45309] border border-[#b45309] bg-white/70 px-3 py-1.5 rounded-lg hover:bg-white w-fit">
             {t('common.reconnectAccount', 'Reconnect Account')}
           </Link>
         </div>
@@ -80,3 +80,4 @@ export default function Orders() {
     </div>
   );
 }
+

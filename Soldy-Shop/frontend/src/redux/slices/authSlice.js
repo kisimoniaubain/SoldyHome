@@ -28,6 +28,7 @@ const safeStorageRemove = (key) => {
 
 const savedUserRaw = safeStorageGet('soldyUser');
 const savedTokenRaw = safeStorageGet('soldyToken');
+const savedAdminAccessRaw = safeStorageGet('soldyAdminAccess');
 const isLocalFallbackSession = Boolean(savedTokenRaw && savedTokenRaw.startsWith('local-token-'));
 
 if (isLocalFallbackSession) {
@@ -37,6 +38,7 @@ if (isLocalFallbackSession) {
 
 const savedUser = isLocalFallbackSession ? null : savedUserRaw;
 const savedToken = isLocalFallbackSession ? null : savedTokenRaw;
+const savedAdminAccess = isLocalFallbackSession ? false : savedAdminAccessRaw === 'true';
 
 const parseSavedUser = (rawValue) => {
   if (!rawValue) return null;
@@ -87,11 +89,21 @@ export const updateProfile = createAsyncThunk('auth/updateProfile', async (data,
   }
 });
 
+export const unlockAdminAccess = createAsyncThunk('auth/unlockAdminAccess', async (password, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/auth/admin-access', { password });
+    return res.data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Failed to unlock admin access');
+  }
+});
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
     user: parseSavedUser(savedUser),
     token: savedToken || null,
+    adminAccessGranted: savedAdminAccess,
     loading: false,
     error: null,
   },
@@ -99,8 +111,10 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.adminAccessGranted = false;
       safeStorageRemove('soldyToken');
       safeStorageRemove('soldyUser');
+      safeStorageRemove('soldyAdminAccess');
       toast.success('Logged out successfully');
     },
     clearError: (state) => { state.error = null; },
@@ -110,8 +124,10 @@ const authSlice = createSlice({
       state.loading = false;
       state.user = action.payload.user;
       state.token = action.payload.token;
+      state.adminAccessGranted = false;
       safeStorageSet('soldyToken', action.payload.token);
       safeStorageSet('soldyUser', JSON.stringify(action.payload.user));
+      safeStorageRemove('soldyAdminAccess');
     };
 
     builder
@@ -124,6 +140,15 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (s, a) => { s.loading = false; s.error = a.payload; })
 
       .addCase(fetchMe.fulfilled, (s, a) => { s.user = a.payload.user; })
+
+      .addCase(unlockAdminAccess.fulfilled, (s, a) => {
+        s.adminAccessGranted = true;
+        if (a.payload?.user) {
+          s.user = a.payload.user;
+          safeStorageSet('soldyUser', JSON.stringify(a.payload.user));
+        }
+        safeStorageSet('soldyAdminAccess', 'true');
+      })
 
       .addCase(updateProfile.fulfilled, (s, a) => {
         s.user = a.payload.user;

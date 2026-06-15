@@ -10,7 +10,7 @@ export default function StarRating({ rating = 0, max = 5, size = 16 }) {
           <Star
             key={i}
             size={size}
-            className={filled || half ? 'text-yellow-400' : 'text-gray-200'}
+            className={filled || half ? 'text-[#b45309]' : 'text-gray-200'}
             fill={filled ? 'currentColor' : half ? 'url(#half)' : 'none'}
           />
         );
@@ -18,3 +18,4 @@ export default function StarRating({ rating = 0, max = 5, size = 16 }) {
     </div>
   );
 }
+

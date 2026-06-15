@@ -38,7 +38,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-fit mx-auto mb-4">
-            <BrandLogo compact />
+            <BrandLogo compact theme="auto" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{t('auth.createAccount', 'Create account')}</h1>
           <p className="text-gray-500 mt-1">
@@ -98,3 +98,4 @@ export default function Register() {
     </div>
   );
 }
+
