@@ -138,7 +138,7 @@ export default function Navbar() {
                     )}
                     <div className="my-2 border-t border-gray-600" />
                     <button
-                      onClick={() => { dispatch(logout()); setUserMenuOpen(false); }}
+                      onClick={() => { dispatch(logout()); setUserMenuOpen(false); navigate('/login', { replace: true }); }}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-600/20 transition-all duration-200 rounded-lg mx-2 w-full"
                     >
                       <LogOut size={18} /> {t('common.logout', 'Logout')}

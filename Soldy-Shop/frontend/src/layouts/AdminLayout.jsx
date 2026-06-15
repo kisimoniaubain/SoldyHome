@@ -104,7 +104,7 @@ export default function AdminLayout() {
                 </NavLink>
                 <hr className="border-gray-800 my-1" />
                 <button
-                  onClick={() => { dispatch(logout()); setProfileMenuOpen(false); navigate('/'); }}
+                  onClick={() => { dispatch(logout()); setProfileMenuOpen(false); navigate('/login', { replace: true }); }}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-400 hover:text-red-300 hover:bg-gray-800 w-full transition-all"
                 >
                   <LogOut size={16} /> Logout
