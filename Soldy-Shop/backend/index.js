@@ -97,10 +97,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
-const hasFrontendBuild = fs.existsSync(frontendDistPath);
+const frontendDistCandidates = [
+  path.resolve(__dirname, '../frontend/dist'),
+  path.resolve(__dirname, '../../frontend/dist'),
+  path.resolve(__dirname, '../client/dist'),
+  path.resolve(__dirname, '../../client/dist'),
+];
+
+const frontendDistPath = frontendDistCandidates.find((candidate) => fs.existsSync(candidate));
+const hasFrontendBuild = Boolean(frontendDistPath);
 
 if (hasFrontendBuild) {
+  console.log(`✅ Serving frontend build from: ${frontendDistPath}`);
   app.use(express.static(frontendDistPath));
 
   app.get('*', (req, res, next) => {
@@ -108,6 +116,7 @@ if (hasFrontendBuild) {
     return res.sendFile(path.join(frontendDistPath, 'index.html'));
   });
 } else {
+  console.warn('⚠️ Frontend build not found. Checked paths:', frontendDistCandidates);
   // Root route for quick browser checks when frontend is not built.
   app.get('/', (req, res) => {
     res.json({
