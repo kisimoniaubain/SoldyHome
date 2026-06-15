@@ -97,7 +97,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-const frontendDistPath = path.resolve(__dirname, '../client/dist');
+const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
 const hasFrontendBuild = fs.existsSync(frontendDistPath);
 
 if (hasFrontendBuild) {
