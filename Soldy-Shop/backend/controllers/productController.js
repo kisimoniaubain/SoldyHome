@@ -1,6 +1,38 @@
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 
+const normalizeImageUrl = (raw, req) => {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+
+  const origin = `${req.protocol}://${req.get('host')}`;
+
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const parsed = new URL(value);
+      const isLocalOrLegacyHost = ['localhost', '127.0.0.1', 'soldyhome-1.onrender.com', 'soldyhomeshop.onrender.com']
+        .includes(parsed.hostname);
+
+      if (isLocalOrLegacyHost && parsed.pathname.startsWith('/uploads/')) {
+        return `${origin}${parsed.pathname}`;
+      }
+      return value;
+    } catch {
+      return value;
+    }
+  }
+
+  if (value.startsWith('/uploads/')) return `${origin}${value}`;
+  if (value.startsWith('uploads/')) return `${origin}/${value}`;
+  return value;
+};
+
+const normalizeProductImages = (product, req) => {
+  if (!product || !Array.isArray(product.images)) return product;
+  product.images = product.images.map((img) => normalizeImageUrl(img, req)).filter(Boolean);
+  return product;
+};
+
 // @desc    Get all products
 // @route   GET /api/products
 const getProducts = asyncHandler(async (req, res) => {
@@ -38,6 +70,8 @@ const getProducts = asyncHandler(async (req, res) => {
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
+  products.forEach((p) => normalizeProductImages(p, req));
+
   res.json({
     success: true,
     products,
@@ -55,6 +89,7 @@ const getProduct = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Product not found');
   }
+  normalizeProductImages(product, req);
   res.json({ success: true, product });
 });
 
@@ -66,6 +101,7 @@ const getProductBySlug = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Product not found');
   }
+  normalizeProductImages(product, req);
   res.json({ success: true, product });
 });
 
@@ -73,6 +109,7 @@ const getProductBySlug = asyncHandler(async (req, res) => {
 // @route   GET /api/products/featured
 const getFeaturedProducts = asyncHandler(async (req, res) => {
   const products = await Product.find({ isFeatured: true, isActive: true }).limit(8);
+  products.forEach((p) => normalizeProductImages(p, req));
   res.json({ success: true, products });
 });
 
@@ -88,6 +125,7 @@ const getCategories = asyncHandler(async (req, res) => {
 const getMyProducts = asyncHandler(async (req, res) => {
   const filter = req.user.role === 'admin' ? {} : { seller: req.user._id };
   const products = await Product.find(filter).sort({ createdAt: -1 });
+  products.forEach((p) => normalizeProductImages(p, req));
   res.json({ success: true, products });
 });
 
@@ -115,6 +153,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   Object.assign(product, req.body);
   const updatedProduct = await product.save();
+  normalizeProductImages(updatedProduct, req);
   res.json({ success: true, product: updatedProduct });
 });
 
