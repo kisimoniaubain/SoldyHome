@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const { protect } = require('../middleware/auth');
 const { sellerOrAdmin } = require('../middleware/seller');
@@ -21,6 +24,11 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+const uploadsDir = path.resolve(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -47,8 +55,18 @@ router.post(
     }
 
     if (!isCloudinaryConfigured()) {
-      res.status(500);
-      throw new Error('Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.');
+      const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
+      const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext) ? ext : '.jpg';
+      const fileName = `${Date.now()}-${crypto.randomUUID()}${safeExt}`;
+      const filePath = path.join(uploadsDir, fileName);
+
+      fs.writeFileSync(filePath, req.file.buffer);
+
+      return res.json({
+        success: true,
+        url: `/uploads/${fileName}`,
+        storage: 'local',
+      });
     }
 
     const b64 = Buffer.from(req.file.buffer).toString('base64');
