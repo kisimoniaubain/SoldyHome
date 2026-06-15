@@ -1,26 +1,12 @@
-{
-  "name": "soldy-home",
+﻿{
+  "name": "soldy-shop",
   "version": "1.0.0",
-  "description": "Soldy.Home - Full-stack eCommerce platform",
-  "private": true,
-  "type": "commonjs",
+  "description": "Soldy.Shop - Full-stack eCommerce platform",
   "scripts": {
-    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-    "start": "npm run backend:start",
-    "backend:start": "cd backend && npm start",
-    "backend:dev": "cd backend && npm run dev",
-    "backend:build": "cd backend && npm install",
-    "frontend:dev": "cd frontend && npm run dev",
-    "frontend:build": "cd frontend && npm install && npm run build",
-    "build": "npm run frontend:build && npm run backend:build",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "cd backend && npm run dev",
+    "start": "cd backend && npm start",
+    "server": "cd backend && npm start",
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
     "seed": "cd backend && npm run seed:furniture"
-  },
-  "workspaces": [
-    "backend",
-    "frontend"
-  ],
-  "devDependencies": {
-    "concurrently": "^8.2.2"
   }
 }
