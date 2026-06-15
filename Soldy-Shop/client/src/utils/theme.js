@@ -1,16 +1,36 @@
 const THEME_KEY = 'soldyTheme';
 
+const safeStorageGet = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeStorageSet = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore storage errors to avoid hard crashes
+  }
+};
+
 export const getInitialTheme = () => {
-  const saved = localStorage.getItem(THEME_KEY);
+  const saved = safeStorageGet(THEME_KEY);
   if (saved === 'light' || saved === 'dark') return saved;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'light';
 };
 
 export const applyTheme = (theme) => {
+  if (typeof document === 'undefined') return;
   const root = document.documentElement;
   if (theme === 'dark') root.classList.add('dark');
   else root.classList.remove('dark');
-  localStorage.setItem(THEME_KEY, theme);
+  safeStorageSet(THEME_KEY, theme);
 };
 
-export const getStoredTheme = () => localStorage.getItem(THEME_KEY);
+export const getStoredTheme = () => safeStorageGet(THEME_KEY);

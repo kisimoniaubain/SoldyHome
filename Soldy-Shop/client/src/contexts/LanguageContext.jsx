@@ -252,12 +252,30 @@ const LANGUAGES = [
 
 const LanguageContext = createContext(null);
 
+const safeStorageGet = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeStorageSet = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore storage errors to avoid hard crashes
+  }
+};
+
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState(() => localStorage.getItem(STORAGE_KEY) || 'en');
+  const [language, setLanguage] = useState(() => safeStorageGet(STORAGE_KEY) || 'en');
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, language);
-    document.documentElement.lang = language;
+    safeStorageSet(STORAGE_KEY, language);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
   }, [language]);
 
   const t = (key, fallback = key) => {

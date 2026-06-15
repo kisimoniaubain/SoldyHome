@@ -2,13 +2,37 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
-const savedUserRaw = localStorage.getItem('soldyUser');
-const savedTokenRaw = localStorage.getItem('soldyToken');
+const safeStorageGet = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeStorageSet = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore storage errors to avoid hard crashes
+  }
+};
+
+const safeStorageRemove = (key) => {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // ignore storage errors to avoid hard crashes
+  }
+};
+
+const savedUserRaw = safeStorageGet('soldyUser');
+const savedTokenRaw = safeStorageGet('soldyToken');
 const isLocalFallbackSession = Boolean(savedTokenRaw && savedTokenRaw.startsWith('local-token-'));
 
 if (isLocalFallbackSession) {
-  localStorage.removeItem('soldyToken');
-  localStorage.removeItem('soldyUser');
+  safeStorageRemove('soldyToken');
+  safeStorageRemove('soldyUser');
 }
 
 const savedUser = isLocalFallbackSession ? null : savedUserRaw;
@@ -20,7 +44,7 @@ const parseSavedUser = (rawValue) => {
     const parsed = JSON.parse(rawValue);
     return parsed && typeof parsed === 'object' ? parsed : null;
   } catch (_error) {
-    localStorage.removeItem('soldyUser');
+    safeStorageRemove('soldyUser');
     return null;
   }
 };
@@ -75,8 +99,8 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
-      localStorage.removeItem('soldyToken');
-      localStorage.removeItem('soldyUser');
+      safeStorageRemove('soldyToken');
+      safeStorageRemove('soldyUser');
       toast.success('Logged out successfully');
     },
     clearError: (state) => { state.error = null; },
@@ -86,8 +110,8 @@ const authSlice = createSlice({
       state.loading = false;
       state.user = action.payload.user;
       state.token = action.payload.token;
-      localStorage.setItem('soldyToken', action.payload.token);
-      localStorage.setItem('soldyUser', JSON.stringify(action.payload.user));
+      safeStorageSet('soldyToken', action.payload.token);
+      safeStorageSet('soldyUser', JSON.stringify(action.payload.user));
     };
 
     builder
@@ -103,7 +127,7 @@ const authSlice = createSlice({
 
       .addCase(updateProfile.fulfilled, (s, a) => {
         s.user = a.payload.user;
-        localStorage.setItem('soldyUser', JSON.stringify(a.payload.user));
+        safeStorageSet('soldyUser', JSON.stringify(a.payload.user));
         toast.success('Profile updated!');
       });
   },
