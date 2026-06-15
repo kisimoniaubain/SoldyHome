@@ -108,11 +108,9 @@ export default function Checkout() {
               || String(data?.checkoutRequestId || '').startsWith('SIM-MPESA-');
 
             if (isSimulation) {
-              toast('M-Pesa is in simulation mode. No prompt will appear on phone. Set MPESA_SIMULATION_MODE=false in server/.env.', {
-                icon: '⚠️',
-              });
+              toast.success('Order placed! (M-Pesa test mode — no real charge. Deploy to Render for live payments.)');
             } else {
-              toast.success(data?.message || 'M-Pesa prompt sent. Check your phone.');
+              toast.success(data?.message || 'M-Pesa prompt sent. Check your phone and enter your PIN.');
             }
           } catch (error) {
             const apiMessage = error?.response?.data?.message;
