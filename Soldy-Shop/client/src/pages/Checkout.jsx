@@ -89,6 +89,14 @@ export default function Checkout() {
         const orderId = result.payload._id;
 
         if (payment === 'mpesa') {
+          // Local fallback orders cannot be paid via M-Pesa (no real DB record)
+          if (String(orderId).startsWith('local-order-')) {
+            toast('Order saved locally. Please log in to complete M-Pesa payment.', { icon: 'ℹ️' });
+            navigate('/payment/success', { state: { orderId } });
+            setProcessing(false);
+            return;
+          }
+
           const normalizedPhone = normalizeKenyanPhoneNumber(mpesaPhone || shipping.phone);
           if (!normalizedPhone) {
             toast.error('Enter a valid Safaricom number: 07XXXXXXXX or 2547XXXXXXXX.');

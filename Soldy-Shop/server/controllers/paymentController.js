@@ -269,6 +269,15 @@ const initiateMpesaCharge = asyncHandler(async (req, res) => {
     });
   }
 
+  // Validate orderId is a proper MongoDB ObjectId before querying
+  const mongoose = require('mongoose');
+  if (!mongoose.Types.ObjectId.isValid(orderId)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid order ID. Please log in and place the order again to use M-Pesa.',
+    });
+  }
+
   const order = await Order.findById(orderId);
   if (!order) {
     return res.status(404).json({
