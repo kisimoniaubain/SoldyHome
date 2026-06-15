@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { toggleWishlist } from '../redux/slices/wishlistSlice';
 import { addToCart } from '../redux/slices/cartSlice';
 import { Heart, ShoppingCart } from 'lucide-react';
+import { applyImageFallback, normalizeImageUrl } from '../utils/imageUrl';
 
 export default function Wishlist() {
   const { items } = useSelector((s) => s.wishlist);
@@ -25,7 +26,8 @@ export default function Wishlist() {
             <div key={product._id} className="card overflow-hidden group hover:shadow-md transition-shadow">
               <div className="relative aspect-square overflow-hidden bg-gray-50">
                 <Link to={`/products/${product._id}`}>
-                  <img src={product.images?.[0] || 'https://placehold.co/300x300'} alt={product.name}
+                  <img src={normalizeImageUrl(product.images?.[0]) || 'https://placehold.co/300x300'} alt={product.name}
+                    onError={(e) => applyImageFallback(e, 0)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 </Link>
                 <button onClick={() => dispatch(toggleWishlist(product))}

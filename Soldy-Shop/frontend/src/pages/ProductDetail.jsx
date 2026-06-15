@@ -9,12 +9,7 @@ import StarRating from '../components/StarRating';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Heart, Truck, Shield, Star, ChevronLeft, ChevronRight, Plus, Minus } from 'lucide-react';
-
-const fallbackFurnitureImages = [
-  'https://images.pexels.com/photos/276583/pexels-photo-276583.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  'https://images.pexels.com/photos/1080721/pexels-photo-1080721.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=1200',
-];
+import { applyImageFallback, normalizeProductImages } from '../utils/imageUrl';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -40,7 +35,7 @@ export default function ProductDetail() {
 
   const displayPrice = product.discountPrice || product.price;
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
-  const images = product.images?.length ? product.images : fallbackFurnitureImages;
+  const images = normalizeProductImages(product.images);
 
   const handleAddToCart = () => {
     if (!user) { navigate('/login'); return; }
@@ -73,7 +68,12 @@ export default function ProductDetail() {
         {/* Images */}
         <div className="space-y-3">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-50">
-            <img src={images[imgIndex]} alt={product.name} className="w-full h-full object-cover" />
+            <img
+              src={images[imgIndex]}
+              alt={product.name}
+              onError={(e) => applyImageFallback(e, imgIndex)}
+              className="w-full h-full object-cover"
+            />
             {images.length > 1 && (
               <>
                 <button onClick={() => setImgIndex((p) => (p - 1 + images.length) % images.length)}
@@ -92,7 +92,12 @@ export default function ProductDetail() {
               {images.map((img, i) => (
                 <button key={i} onClick={() => setImgIndex(i)}
                   className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === imgIndex ? 'border-primary-600' : 'border-transparent'}`}>
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={img}
+                    alt=""
+                    onError={(e) => applyImageFallback(e, i)}
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>

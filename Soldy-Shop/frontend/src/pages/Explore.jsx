@@ -1,3 +1,4 @@
+import { applyImageFallback, normalizeImageUrl } from '../utils/imageUrl';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -285,8 +286,9 @@ export default function Explore() {
                 className="group relative rounded-xl overflow-hidden h-[300px] bg-gray-100"
               >
                 <img
-                  src={product.images?.[0] || 'https://via.placeholder.com/400'}
+                  src={normalizeImageUrl(product.images?.[0]) || 'https://via.placeholder.com/400'}
                   alt={product.name}
+                  onError={(e) => applyImageFallback(e, 0)}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">

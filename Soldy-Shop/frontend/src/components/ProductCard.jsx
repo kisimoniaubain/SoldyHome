@@ -4,19 +4,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../redux/slices/cartSlice';
 import { toggleWishlist } from '../redux/slices/wishlistSlice';
 import { ShoppingCart, Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
-
-const fallbackFurnitureImages = [
-  'https://images.pexels.com/photos/276583/pexels-photo-276583.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  'https://images.pexels.com/photos/1080721/pexels-photo-1080721.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=1200',
-];
+import { applyImageFallback, normalizeProductImages } from '../utils/imageUrl';
 
 export default function ProductCard({ product }) {
   const dispatch = useDispatch();
   const { items: wishlist } = useSelector((s) => s.wishlist);
   const isWishlisted = wishlist.some((i) => i._id === product._id);
   const images = useMemo(
-    () => (product.images?.length ? product.images : fallbackFurnitureImages),
+    () => normalizeProductImages(product.images),
     [product.images, product._id]
   );
   const [activeImage, setActiveImage] = useState(0);
@@ -72,6 +67,7 @@ export default function ProductCard({ product }) {
         <img
           src={images[activeImage]}
           alt={product.name}
+          onError={(e) => applyImageFallback(e, activeImage)}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         {images.length > 1 && (
@@ -149,6 +145,7 @@ export default function ProductCard({ product }) {
                 key={`${product._id}-thumb-${idx}`}
                 src={img}
                 alt={`${product.name} ${idx + 1}`}
+                onError={(e) => applyImageFallback(e, idx)}
                 className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md border object-cover ${isActiveThumb ? 'border-primary-500 ring-1 ring-primary-400' : 'border-gray-200'}`}
               />
               );
