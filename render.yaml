@@ -2,6 +2,7 @@ services:
   - type: web
     name: soldy-home-api
     runtime: node
+    rootDir: Soldy-Shop
     buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm ci
     startCommand: cd backend && npm start
     healthCheckPath: /api/health
