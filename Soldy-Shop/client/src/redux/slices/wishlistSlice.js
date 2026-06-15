@@ -1,10 +1,20 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const saved = localStorage.getItem('soldyWishlist');
+const loadWishlist = () => {
+  try {
+    const raw = localStorage.getItem('soldyWishlist');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    localStorage.removeItem('soldyWishlist');
+    return [];
+  }
+};
 
 const wishlistSlice = createSlice({
   name: 'wishlist',
-  initialState: { items: saved ? JSON.parse(saved) : [] },
+  initialState: { items: loadWishlist() },
   reducers: {
     toggleWishlist: (state, action) => {
       const product = action.payload;
@@ -14,11 +24,19 @@ const wishlistSlice = createSlice({
       } else {
         state.items.push(product);
       }
-      localStorage.setItem('soldyWishlist', JSON.stringify(state.items));
+      try {
+        localStorage.setItem('soldyWishlist', JSON.stringify(state.items));
+      } catch {
+        // ignore storage quota/privacy errors to avoid breaking UI
+      }
     },
     clearWishlist: (state) => {
       state.items = [];
-      localStorage.removeItem('soldyWishlist');
+      try {
+        localStorage.removeItem('soldyWishlist');
+      } catch {
+        // ignore storage quota/privacy errors to avoid breaking UI
+      }
     },
   },
 });
