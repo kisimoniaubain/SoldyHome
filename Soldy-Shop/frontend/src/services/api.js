@@ -8,7 +8,8 @@ const resolvedBaseURL = normalizedApiBase
 
 const safeStorageGet = (key) => {
   try {
-    return localStorage.getItem(key);
+    // Auth token is persisted in sessionStorage; fallback to localStorage for compatibility.
+    return sessionStorage.getItem(key) || localStorage.getItem(key);
   } catch {
     return null;
   }

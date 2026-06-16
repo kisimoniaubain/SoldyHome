@@ -2,11 +2,16 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import furnitureProducts from '../../data/furnitureProducts';
+import { logout } from './authSlice';
 
 const CART_KEY = 'soldyLocalCart';
 
 const loadLocalCart = () => {
   try {
+    // Only load cart if user is logged in (has sessionStorage token)
+    if (!sessionStorage.getItem('soldyToken')) {
+      return { items: [], couponDiscount: 0, coupon: null };
+    }
     const parsed = JSON.parse(localStorage.getItem(CART_KEY) || 'null');
     if (parsed && Array.isArray(parsed.items)) return parsed;
   } catch {
@@ -27,8 +32,8 @@ const shouldUseLocalFallback = (err) => {
 const clearBrokenAuthIfNeeded = (err) => {
   const msg = String(err?.response?.data?.message || '').toLowerCase();
   if (err?.response?.status === 401 && msg.includes('token')) {
-    localStorage.removeItem('soldyToken');
-    localStorage.removeItem('soldyUser');
+    sessionStorage.removeItem('soldyToken');
+    sessionStorage.removeItem('soldyUser');
     toast('Session expired. Using website cart mode.', { icon: 'ℹ️' });
   }
 };
@@ -74,7 +79,7 @@ const loadServerCart = async () => {
 
 export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithValue }) => {
   try {
-    if (!localStorage.getItem('soldyToken')) return loadLocalCart();
+    if (!sessionStorage.getItem('soldyToken')) return { items: [], couponDiscount: 0, coupon: null };
     const serverCart = await loadServerCart();
     return mergeCarts(serverCart, loadLocalCart());
   } catch (err) {
@@ -88,9 +93,13 @@ export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithVa
 
 export const addToCart = createAsyncThunk('cart/add', async ({ productId, qty = 1 }, { rejectWithValue }) => {
   try {
-    const hasToken = Boolean(localStorage.getItem('soldyToken'));
+    const hasToken = Boolean(sessionStorage.getItem('soldyToken'));
 
-    if (!hasToken || isStaticProductId(productId)) {
+    if (!hasToken) {
+      return rejectWithValue('Please log in to add items to cart');
+    }
+
+    if (isStaticProductId(productId)) {
       const cart = loadLocalCart();
       const product = findProduct(productId);
       if (!product) return rejectWithValue('Product not found');
@@ -145,7 +154,7 @@ export const addToCart = createAsyncThunk('cart/add', async ({ productId, qty = 
 
 export const updateCartQty = createAsyncThunk('cart/updateQty', async ({ productId, qty }, { rejectWithValue }) => {
   try {
-    const hasToken = Boolean(localStorage.getItem('soldyToken'));
+    const hasToken = Boolean(sessionStorage.getItem('soldyToken'));
 
     if (!hasToken || isStaticProductId(productId)) {
       const cart = loadLocalCart();
@@ -184,7 +193,7 @@ export const updateCartQty = createAsyncThunk('cart/updateQty', async ({ product
 
 export const removeFromCart = createAsyncThunk('cart/remove', async (productId, { rejectWithValue }) => {
   try {
-    const hasToken = Boolean(localStorage.getItem('soldyToken'));
+    const hasToken = Boolean(sessionStorage.getItem('soldyToken'));
 
     if (!hasToken || isStaticProductId(productId)) {
       const cart = loadLocalCart();
@@ -224,7 +233,7 @@ export const clearCart = createAsyncThunk('cart/clear', async (_, { rejectWithVa
   try {
     const empty = { items: [], couponDiscount: 0, coupon: null };
 
-    if (!localStorage.getItem('soldyToken')) {
+    if (!sessionStorage.getItem('soldyToken')) {
       saveLocalCart(empty);
       return null;
     }
@@ -245,7 +254,7 @@ export const clearCart = createAsyncThunk('cart/clear', async (_, { rejectWithVa
 
 export const applyCoupon = createAsyncThunk('cart/applyCoupon', async (code, { rejectWithValue }) => {
   try {
-    if (!localStorage.getItem('soldyToken')) {
+    if (!sessionStorage.getItem('soldyToken')) {
       const cart = loadLocalCart();
       const subtotal = cart.items.reduce((acc, i) => acc + i.price * i.qty, 0);
       const normalized = String(code || '').trim().toUpperCase();
@@ -292,7 +301,7 @@ export const applyCoupon = createAsyncThunk('cart/applyCoupon', async (code, { r
 
 export const removeCoupon = createAsyncThunk('cart/removeCoupon', async (_, { rejectWithValue }) => {
   try {
-    if (!localStorage.getItem('soldyToken')) {
+    if (!sessionStorage.getItem('soldyToken')) {
       const cart = loadLocalCart();
       cart.coupon = null;
       cart.couponDiscount = 0;
@@ -338,6 +347,13 @@ const cartSlice = createSlice({
       }
     };
     builder
+      .addCase(logout, (state) => {
+        state.items = [];
+        state.couponDiscount = 0;
+        state.coupon = null;
+        state.loading = false;
+        localStorage.removeItem(CART_KEY);
+      })
       .addCase(fetchCart.pending, (s) => { s.loading = true; })
       .addCase(fetchCart.fulfilled, setCart)
       .addCase(fetchCart.rejected, (s) => { s.loading = false; })

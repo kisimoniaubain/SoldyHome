@@ -40,7 +40,7 @@ export default function Profile() {
     dispatch(logout());
     setShowAdminModal(false);
     setAdminPassInput('');
-    navigate('/login');
+    navigate('/');
   };
 
   const handleAdminAccess = async () => {

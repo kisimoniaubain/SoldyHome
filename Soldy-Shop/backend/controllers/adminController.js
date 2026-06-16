@@ -2,6 +2,8 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const Coupon = require('../models/Coupon');
+const SupportConversation = require('../models/SupportConversation');
 
 // @desc    Get dashboard stats
 // @route   GET /api/admin/stats
@@ -10,12 +12,15 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfDay = new Date(now.setHours(0, 0, 0, 0));
 
-  const [totalUsers, totalProducts, totalOrders, paidOrders] = await Promise.all([
+  const [totalUsers, totalProducts, totalOrders, paidOrders, totalCoupons, unreadMessages] = await Promise.all([
     User.countDocuments({ role: 'user' }),
     Product.countDocuments({ isActive: true }),
     Order.countDocuments(),
     Order.find({ isPaid: true }),
+    Coupon.countDocuments(),
+    SupportConversation.aggregate([{ $group: { _id: null, total: { $sum: '$adminUnreadCount' } } }]),
   ]);
+  const totalUnreadMessages = unreadMessages[0]?.total || 0;
 
   const totalRevenue = paidOrders.reduce((acc, o) => acc + o.totalPrice, 0);
   const monthlyRevenue = paidOrders
@@ -57,6 +62,8 @@ const getDashboardStats = asyncHandler(async (req, res) => {
       ordersByStatus,
       topProducts,
       monthlyData,
+      totalCoupons,
+      totalUnreadMessages,
     },
   });
 });
@@ -98,4 +105,30 @@ const setUserRole = asyncHandler(async (req, res) => {
   res.json({ success: true, user });
 });
 
-module.exports = { getDashboardStats, getUsers, toggleUserStatus, setUserRole };
+// @desc    Get new-since-last-viewed counts for admin nav badges
+// @route   GET /api/admin/new-counts
+const getNewCounts = asyncHandler(async (req, res) => {
+  const toDate = (s) => (s && !isNaN(Date.parse(s)) ? new Date(s) : new Date(0));
+  const { productsAt, ordersAt, usersAt, couponsAt } = req.query;
+
+  const [newProducts, newOrders, newUsers, newCoupons, unreadMessages] = await Promise.all([
+    Product.countDocuments({ isActive: true, createdAt: { $gt: toDate(productsAt) } }),
+    Order.countDocuments({ createdAt: { $gt: toDate(ordersAt) } }),
+    User.countDocuments({ role: 'user', createdAt: { $gt: toDate(usersAt) } }),
+    Coupon.countDocuments({ createdAt: { $gt: toDate(couponsAt) } }),
+    SupportConversation.aggregate([{ $group: { _id: null, total: { $sum: '$adminUnreadCount' } } }]),
+  ]);
+
+  res.json({
+    success: true,
+    counts: {
+      products: newProducts,
+      orders: newOrders,
+      users: newUsers,
+      coupons: newCoupons,
+      messages: unreadMessages[0]?.total || 0,
+    },
+  });
+});
+
+module.exports = { getDashboardStats, getNewCounts, getUsers, toggleUserStatus, setUserRole };

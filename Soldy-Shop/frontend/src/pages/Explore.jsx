@@ -31,7 +31,7 @@ export default function Explore() {
     dispatch(logout());
     setMobileMenuOpen(false);
     setUserMenuOpen(false);
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const heroImages = [

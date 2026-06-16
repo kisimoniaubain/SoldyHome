@@ -13,12 +13,12 @@ export default function Cart() {
   const { user } = useSelector((s) => s.auth);
   const [couponCode, setCouponCode] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
-  const isWebsiteMode = !localStorage.getItem('soldyToken');
+  const isLoggedOut = !user;
   const { t } = useLanguage();
 
   useEffect(() => {
-    if (user) dispatch(fetchCart());
-  }, [user, dispatch]);
+    dispatch(fetchCart());
+  }, [dispatch, user?._id]);
 
   const subtotal = items.reduce((acc, i) => acc + i.price * i.qty, 0);
   const totalUnits = items.reduce((acc, i) => acc + i.qty, 0);
@@ -41,12 +41,12 @@ export default function Cart() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8">{t('cart.shoppingCart', 'Shopping Cart')} ({totalUnits})</h1>
 
-      {isWebsiteMode && (
-        <div className="mb-6 rounded-xl border border-[#b45309] bg-[#b45309] px-4 py-3 text-sm text-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      {isLoggedOut && (
+        <div className="mb-6 rounded-xl border border-[#b45309] bg-[#fff7ed] px-4 py-3 text-sm text-[#9a3412] flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <Info size={16} className="mt-0.5 shrink-0" />
-          <p className="flex-1">{t('common.websiteModeActive', 'Website mode active')}: cart is saved locally on this device because your session token is unavailable or expired.</p>
-          <Link to="/login" className="text-xs font-semibold text-[#b45309] border border-[#b45309] bg-white/70 px-3 py-1.5 rounded-lg hover:bg-white w-fit">
-            {t('common.reconnectAccount', 'Reconnect Account')}
+          <p className="flex-1">{t('common.loginRequiredCart', 'Log in to view and use your cart. When no account is logged in, the cart stays empty.')}</p>
+          <Link to="/login" className="text-xs font-semibold text-white border border-[#b45309] bg-[#b45309] px-3 py-1.5 rounded-lg hover:bg-[#92400e] w-fit">
+            {t('common.signIn', 'Sign In')}
           </Link>
         </div>
       )}
@@ -54,9 +54,9 @@ export default function Cart() {
       {items.length === 0 ? (
         <div className="text-center py-24">
           <ShoppingBag size={60} className="mx-auto text-gray-200 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-600 mb-2">{t('cart.emptyTitle', 'Your cart is empty')}</h2>
-          <p className="text-gray-400 mb-6">{t('cart.emptyDesc', 'Add some products to get started')}</p>
-          <Link to="/products" className="btn-primary">{t('common.startShopping', 'Start Shopping')}</Link>
+          <h2 className="text-xl font-semibold text-gray-600 mb-2">{isLoggedOut ? t('cart.loginToView', 'Log in to view your cart') : t('cart.emptyTitle', 'Your cart is empty')}</h2>
+          <p className="text-gray-400 mb-6">{isLoggedOut ? t('cart.loginToUseCart', 'Please sign in first. Cart items belong to a logged-in account.') : t('cart.emptyDesc', 'Add some products to get started')}</p>
+          <Link to={isLoggedOut ? '/login' : '/products'} className="btn-primary">{isLoggedOut ? t('common.signIn', 'Sign In') : t('common.startShopping', 'Start Shopping')}</Link>
         </div>
       ) : (
         <div className="grid lg:grid-cols-3 gap-8">

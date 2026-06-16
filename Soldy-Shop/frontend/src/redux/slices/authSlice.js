@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const safeStorageGet = (key) => {
   try {
-    return localStorage.getItem(key);
+    return sessionStorage.getItem(key);
   } catch {
     return null;
   }
@@ -12,7 +12,7 @@ const safeStorageGet = (key) => {
 
 const safeStorageSet = (key, value) => {
   try {
-    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
   } catch {
     // ignore storage errors to avoid hard crashes
   }
@@ -20,25 +20,14 @@ const safeStorageSet = (key, value) => {
 
 const safeStorageRemove = (key) => {
   try {
-    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
   } catch {
     // ignore storage errors to avoid hard crashes
   }
 };
 
-const savedUserRaw = safeStorageGet('soldyUser');
-const savedTokenRaw = safeStorageGet('soldyToken');
-const savedAdminAccessRaw = safeStorageGet('soldyAdminAccess');
-const isLocalFallbackSession = Boolean(savedTokenRaw && savedTokenRaw.startsWith('local-token-'));
-
-if (isLocalFallbackSession) {
-  safeStorageRemove('soldyToken');
-  safeStorageRemove('soldyUser');
-}
-
-const savedUser = isLocalFallbackSession ? null : savedUserRaw;
-const savedToken = isLocalFallbackSession ? null : savedTokenRaw;
-const savedAdminAccess = isLocalFallbackSession ? false : savedAdminAccessRaw === 'true';
+// Keep user logged in - restore from localStorage
+// (removed forced logout on app open)
 
 const parseSavedUser = (rawValue) => {
   if (!rawValue) return null;
@@ -100,13 +89,20 @@ export const unlockAdminAccess = createAsyncThunk('auth/unlockAdminAccess', asyn
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState: {
-    user: parseSavedUser(savedUser),
-    token: savedToken || null,
-    adminAccessGranted: savedAdminAccess,
-    loading: false,
-    error: null,
-  },
+  initialState: (() => {
+    // Restore from localStorage on app load
+    const savedToken = safeStorageGet('soldyToken');
+    const savedUser = parseSavedUser(safeStorageGet('soldyUser'));
+    const savedAdminAccess = safeStorageGet('soldyAdminAccess') === 'true';
+    
+    return {
+      user: savedUser,
+      token: savedToken,
+      adminAccessGranted: savedAdminAccess,
+      loading: false,
+      error: null,
+    };
+  })(),
   reducers: {
     logout: (state) => {
       state.user = null;

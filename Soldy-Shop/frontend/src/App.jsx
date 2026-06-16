@@ -16,6 +16,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsConditions from './pages/TermsConditions';
+import Contact from './pages/Contact';
 
 // User pages
 import Checkout from './pages/Checkout';
@@ -34,6 +35,7 @@ import AdminOrders from './pages/admin/OrdersManager';
 import AdminUsers from './pages/admin/UsersManager';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminCoupons from './pages/admin/CouponsManager';
+import AdminMessages from './pages/admin/MessagesManager';
 
 function App() {
   return (
@@ -52,6 +54,7 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
 
@@ -77,6 +80,7 @@ function App() {
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/admin/coupons" element={<AdminCoupons />} />
+            <Route path="/admin/messages" element={<AdminMessages />} />
           </Route>
         </Route>
       </Routes>

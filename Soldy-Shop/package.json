@@ -1,16 +1,13 @@
-﻿{
+{
   "name": "soldy-shop",
   "version": "1.0.0",
-  "description": "Soldy.Shop - Full-stack eCommerce platform",
+  "description": "Soldy.Shop - Full-stack eCommerce checkout and payment platform",
   "scripts": {
     "dev": "cd backend && npm run dev",
     "start": "cd backend && npm start",
     "server": "cd backend && npm start",
-    "install:frontend": "npm install --include=dev --prefix frontend",
-    "install:backend": "npm install --prefix backend",
-    "build:frontend": "npm run build --prefix frontend",
-    "build": "npm run install:frontend && npm run build:frontend && npm run install:backend",
-    "postinstall": "npm run install:frontend && npm run build:frontend && npm run install:backend",
-    "seed": "npm run seed:furniture --prefix backend"
+    "build": "npm install --include=dev --prefix frontend && npm run build --prefix frontend && npm install --prefix backend",
+    "postinstall": "npm install --include=dev --prefix frontend && npm run build --prefix frontend && npm install --prefix backend",
+    "seed:furniture": "cd backend && npm run seed:furniture"
   }
 }

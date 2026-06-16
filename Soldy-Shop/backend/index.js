@@ -1,11 +1,13 @@
 require('dotenv').config();
 const fs = require('fs');
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 
 // Route imports
@@ -19,8 +21,10 @@ const reviewRoutes = require('./routes/reviews');
 const couponRoutes = require('./routes/coupons');
 const uploadRoutes = require('./routes/upload');
 const contactRoutes = require('./routes/contact');
+const wishlistRoutes = require('./routes/wishlist');
 
 const app = express();
+const server = http.createServer(app);
 
 // Security middleware
 app.use(helmet({
@@ -68,6 +72,35 @@ app.use(cors({
   credentials: true,
 }));
 
+const io = new Server(server, {
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (configuredOrigins.includes(origin)) return callback(null, true);
+      if (process.env.NODE_ENV === 'development' && /^http:\/\/localhost:\d+$/.test(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  },
+});
+
+io.on('connection', (socket) => {
+  socket.on('support:join', (userId) => {
+    const safeUserId = String(userId || '').trim();
+    if (!safeUserId) return;
+    socket.join(`user:${safeUserId}`);
+  });
+
+  socket.on('support:join-admin', () => {
+    socket.join('admin:support');
+  });
+});
+
+app.set('io', io);
+
 // Stripe webhook needs raw body
 app.use('/api/payment/stripe/webhook', express.raw({ type: 'application/json' }));
 
@@ -97,6 +130,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 app.get('/api/storage/status', (req, res) => {
   const requiredEnv = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
@@ -182,7 +216,7 @@ const startServer = async () => {
     console.error(`⚠️ Database not connected: ${error.message}`);
   }
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Soldy.Shop server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 };

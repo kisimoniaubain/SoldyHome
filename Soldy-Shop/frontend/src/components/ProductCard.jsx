@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../redux/slices/cartSlice';
-import { toggleWishlist } from '../redux/slices/wishlistSlice';
+import { toggleWishlistAsync } from '../redux/slices/wishlistSlice';
 import { ShoppingCart, Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { applyImageFallback, isVideoUrl, normalizeProductImages } from '../utils/imageUrl';
 
 export default function ProductCard({ product }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { items: wishlist } = useSelector((s) => s.wishlist);
+  const { user } = useSelector((s) => s.auth);
   const isWishlisted = wishlist.some((i) => i._id === product._id);
   const images = useMemo(
     () => normalizeProductImages(product.images),
@@ -36,12 +38,17 @@ export default function ProductCard({ product }) {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
+    if (!user) { navigate('/login'); return; }
     dispatch(addToCart({ productId: product._id, qty: 1 }));
   };
 
   const handleWishlist = (e) => {
     e.preventDefault();
-    dispatch(toggleWishlist(product));
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    dispatch(toggleWishlistAsync(product));
   };
 
   const showPrevImage = (e) => {

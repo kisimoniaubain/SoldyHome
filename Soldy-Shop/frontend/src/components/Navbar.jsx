@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
+import { setUnreadMessages } from '../redux/slices/notificationsSlice';
 import BrandLogo from './BrandLogo';
 import { useLanguage } from '../contexts/LanguageContext';
+import api from '../services/api';
+import { getSocket } from '../services/socket';
 import {
   ShoppingCart, Heart, Search, Menu, X, User,
   Package, LogOut, LayoutDashboard, ChevronDown, Settings,
@@ -15,6 +18,8 @@ export default function Navbar() {
   const { user } = useSelector((s) => s.auth);
   const { items } = useSelector((s) => s.cart);
   const { items: wishlist } = useSelector((s) => s.wishlist);
+  const { unreadMessages } = useSelector((s) => s.notifications);
+  const { wishlistCount } = useSelector((s) => s.wishlistNotifications);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +28,7 @@ export default function Navbar() {
   const displayInitial = String(displayName[0] || 'U').toUpperCase();
 
   const cartCount = items.reduce((acc, i) => acc + i.qty, 0);
+  const displayWishlistCount = Math.max(Number(wishlistCount || 0), wishlist.length);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -31,6 +37,39 @@ export default function Navbar() {
       setSearchQuery('');
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    let socket;
+    let joinRoom;
+
+    const onRealtimeUnread = (payload) => {
+      if (cancelled) return;
+      dispatch(setUnreadMessages(Number(payload?.unreadCount || 0)));
+    };
+
+    if (user && user._id) {
+      socket = getSocket();
+      socket.on('support:unread', onRealtimeUnread);
+
+      joinRoom = () => {
+        socket.emit('support:join', String(user._id));
+      };
+
+      socket.on('connect', joinRoom);
+      if (!socket.connected) socket.connect();
+      else joinRoom();
+    }
+
+    return () => {
+      cancelled = true;
+      if (socket) {
+        socket.off('support:unread', onRealtimeUnread);
+        if (joinRoom) socket.off('connect', joinRoom);
+        socket.disconnect();
+      }
+    };
+  }, [user?._id, dispatch]);
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 dark:bg-[#111827] border-b border-gray-200 dark:border-gray-700 shadow-sm ios-safe-top backdrop-blur">
@@ -57,18 +96,25 @@ export default function Navbar() {
 
           {/* Nav links */}
           <div className="hidden md:flex items-center gap-1">
-            {['/', '/products'].map((path, i) => (
+            {['/', '/products', '/contact'].map((path, i) => (
               <NavLink
                 key={path}
                 to={path}
                 end={path === '/'}
                 className={({ isActive }) =>
-                  `px-3 py-2 text-sm rounded-lg transition-colors ${
+                  `relative px-3 py-2 text-sm rounded-lg transition-colors ${
                     isActive ? 'text-[#b45309] dark:text-[#b45309] font-bold' : 'text-gray-700 dark:text-[#b45309] font-medium hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/15'
                   }`
                 }
               >
-                {[t('common.home', 'Home'), t('common.products', 'Products')][i]}
+                <span className="relative inline-flex items-center">
+                  {[t('common.home', 'Home'), t('common.products', 'Products'), 'Contact Us'][i]}
+                  {path === '/contact' && unreadMessages > 0 ? (
+                    <span className="absolute -top-2 -right-3 inline-flex min-w-[18px] h-[18px] px-1 rounded-full bg-[#b45309] text-white text-[10px] font-bold items-center justify-center leading-none shadow-sm">
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
+                    </span>
+                  ) : null}
+                </span>
               </NavLink>
             ))}
           </div>
@@ -78,9 +124,9 @@ export default function Navbar() {
             {/* Wishlist */}
             <Link to="/wishlist" className="hidden sm:inline-flex relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/15 text-gray-700 dark:text-white/90 transition-colors">
               <Heart size={20} />
-              {wishlist.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {wishlist.length}
+              {displayWishlistCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-[#b45309] text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none">
+                  {displayWishlistCount > 99 ? '99+' : displayWishlistCount}
                 </span>
               )}
             </Link>
@@ -89,8 +135,8 @@ export default function Navbar() {
             <Link to="/cart" className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/15 text-gray-700 dark:text-white/90 transition-colors">
               <ShoppingCart size={20} />
               {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-primary-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount > 9 ? '9+' : cartCount}
+                <span className="absolute -top-0.5 -right-0.5 bg-[#b45309] text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none">
+                  {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
             </Link>
@@ -138,7 +184,7 @@ export default function Navbar() {
                     )}
                     <div className="my-2 border-t border-gray-200 dark:border-gray-600" />
                     <button
-                      onClick={() => { dispatch(logout()); setUserMenuOpen(false); navigate('/login', { replace: true }); }}
+                      onClick={() => { dispatch(logout()); setUserMenuOpen(false); navigate('/', { replace: true }); }}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-600/20 transition-all duration-200 rounded-lg mx-2 w-full"
                     >
                       <LogOut size={18} /> {t('common.logout', 'Logout')}
@@ -183,6 +229,17 @@ export default function Navbar() {
             className="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/15">{t('common.home', 'Home')}</NavLink>
           <NavLink to="/products" onClick={() => setMobileOpen(false)}
             className="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/15">{t('common.products', 'Products')}</NavLink>
+          <NavLink to="/contact" onClick={() => setMobileOpen(false)}
+            className="relative block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/15">
+            <span className="inline-flex items-center">
+              Contact Us
+            </span>
+            {unreadMessages > 0 ? (
+              <span className="absolute -top-2 -right-3 inline-flex min-w-[18px] h-[18px] px-1 rounded-full bg-[#b45309] text-white text-[10px] font-bold items-center justify-center leading-none shadow-sm">
+                {unreadMessages > 99 ? '99+' : unreadMessages}
+              </span>
+            ) : null}
+          </NavLink>
           <NavLink to="/wishlist" onClick={() => setMobileOpen(false)}
             className="block px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/15">{t('common.wishlist', 'Wishlist')}</NavLink>
           <NavLink to="/cart" onClick={() => setMobileOpen(false)}

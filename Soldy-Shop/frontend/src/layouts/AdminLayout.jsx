@@ -1,29 +1,101 @@
-import { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import BrandLogo from '../components/BrandLogo';
+import api from '../services/api';
+import { getSocket } from '../services/socket';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
-  Tag, LogOut, ChevronRight, Home, UserCircle, Settings, ChevronDown, Menu, X,
+  Tag, LogOut, ChevronRight, Home, UserCircle, Settings, ChevronDown, Menu, X, MessageCircle,
 } from 'lucide-react';
 
-const navItems = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/admin/products', icon: Package, label: 'Products' },
-  { to: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
-  { to: '/admin/users', icon: Users, label: 'Users' },
-  { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/admin/coupons', icon: Tag, label: 'Coupons' },
+// Map each nav section to its sessionStorage key and API count key
+const NAV_SECTIONS = [
+  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', storageKey: null, apiKey: null },
+  { to: '/admin/products', icon: Package, label: 'Products', storageKey: 'adminViewedProducts', apiKey: 'products' },
+  { to: '/admin/orders', icon: ShoppingCart, label: 'Orders', storageKey: 'adminViewedOrders', apiKey: 'orders' },
+  { to: '/admin/users', icon: Users, label: 'Users', storageKey: 'adminViewedUsers', apiKey: 'users' },
+  { to: '/admin/analytics', icon: BarChart3, label: 'Analytics', storageKey: null, apiKey: null },
+  { to: '/admin/coupons', icon: Tag, label: 'Coupons', storageKey: 'adminViewedCoupons', apiKey: 'coupons' },
+  { to: '/admin/messages', icon: MessageCircle, label: 'Messages', storageKey: 'adminViewedMessages', apiKey: 'messages' },
 ];
 
 export default function AdminLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((s) => s.auth);
   const initial = user?.name?.[0]?.toUpperCase() || 'K';
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [navCounts, setNavCounts] = useState({ products: 0, orders: 0, users: 0, coupons: 0, messages: 0 });
+
+  const getViewedTimestamps = useCallback(() => {
+    const result = {};
+    NAV_SECTIONS.forEach(({ storageKey, apiKey }) => {
+      if (storageKey && apiKey) {
+        result[apiKey] = sessionStorage.getItem(storageKey) || new Date(0).toISOString();
+      }
+    });
+    return result;
+  }, []);
+
+  const markSectionViewed = useCallback((path) => {
+    const section = NAV_SECTIONS.find((s) => s.to === path);
+    if (section?.storageKey && section?.apiKey) {
+      sessionStorage.setItem(section.storageKey, new Date().toISOString());
+      setNavCounts((prev) => ({ ...prev, [section.apiKey]: 0 }));
+    }
+  }, []);
+
+  // Clear badge immediately when navigating to a section
+  useEffect(() => {
+    markSectionViewed(location.pathname);
+  }, [location.pathname, markSectionViewed]);
+
+  useEffect(() => {
+    const fetchNewCounts = async () => {
+      try {
+        const ts = getViewedTimestamps();
+        const params = new URLSearchParams({
+          productsAt: ts.products,
+          ordersAt: ts.orders,
+          usersAt: ts.users,
+          couponsAt: ts.coupons,
+        });
+        const res = await api.get(`/admin/new-counts?${params}`);
+        const c = res.data.counts;
+        // Don't overwrite a section that's currently being viewed (already 0)
+        setNavCounts((prev) => ({
+          products: prev.products === 0 && sessionStorage.getItem('adminViewedProducts') ? 0 : c.products,
+          orders: prev.orders === 0 && sessionStorage.getItem('adminViewedOrders') ? 0 : c.orders,
+          users: prev.users === 0 && sessionStorage.getItem('adminViewedUsers') ? 0 : c.users,
+          coupons: prev.coupons === 0 && sessionStorage.getItem('adminViewedCoupons') ? 0 : c.coupons,
+          messages: c.messages,
+        }));
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchNewCounts();
+    const interval = setInterval(fetchNewCounts, 15000);
+
+    // Real-time new message badge
+    const socket = getSocket();
+    const onAdminUnread = (payload) => {
+      setNavCounts((prev) => ({ ...prev, messages: Number(payload?.unreadCount ?? 0) }));
+    };
+    socket.on('support:admin-unread', onAdminUnread);
+    socket.emit('support:join-admin');
+    if (!socket.connected) socket.connect();
+
+    return () => {
+      clearInterval(interval);
+      socket.off('support:admin-unread', onAdminUnread);
+    };
+  }, []);
 
   const closeMobileSidebar = () => setMobileSidebarOpen(false);
 
@@ -95,25 +167,41 @@ export default function AdminLayout() {
             <ChevronRight size={14} className="ml-auto opacity-50" />
           </NavLink>
 
-          {navItems.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/admin'}
-              onClick={closeMobileSidebar}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`
-              }
-            >
-              <Icon size={18} />
-              {label}
-              <ChevronRight size={14} className="ml-auto opacity-50" />
-            </NavLink>
-          ))}
+          {NAV_SECTIONS.map(({ to, icon: Icon, label, apiKey }) => {
+            const count = apiKey ? (navCounts[apiKey] ?? 0) : 0;
+            const isMessages = apiKey === 'messages';
+
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/admin'}
+                onClick={closeMobileSidebar}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`
+                }
+              >
+                <Icon size={18} />
+                {label}
+                <span className="ml-auto flex items-center gap-1.5">
+                  {count > 0 && (
+                    <span className={`inline-flex min-w-[20px] h-[20px] px-1 rounded-full text-[10px] font-bold items-center justify-center leading-none animate-pulse ${
+                      isMessages
+                        ? 'bg-[#b45309] text-white shadow-md shadow-amber-700/40'
+                        : 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40'
+                    }`}>
+                      {count > 99 ? '99+' : count}
+                    </span>
+                  )}
+                  <ChevronRight size={14} className="opacity-50" />
+                </span>
+              </NavLink>
+            );
+          })}
 
           <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-4">
             <button
@@ -148,7 +236,7 @@ export default function AdminLayout() {
                 </NavLink>
                 <hr className="border-gray-200 dark:border-gray-800 my-1" />
                 <button
-                  onClick={() => { dispatch(logout()); setProfileMenuOpen(false); closeMobileSidebar(); navigate('/login', { replace: true }); }}
+                  onClick={() => { dispatch(logout()); setProfileMenuOpen(false); closeMobileSidebar(); navigate('/', { replace: true }); }}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-gray-800 w-full transition-all"
                 >
                   <LogOut size={16} /> Logout

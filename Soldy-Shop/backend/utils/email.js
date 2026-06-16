@@ -1,14 +1,37 @@
 const nodemailer = require('nodemailer');
 
+const looksLikePlaceholder = (value = '') => {
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) return true;
+
+  return (
+    normalized === 'your_app_password'
+    || normalized === 'replace_with_16_char_google_app_password'
+    || normalized.includes('your_')
+    || normalized.includes('replace_with')
+  );
+};
+
 const getMailerConfig = () => {
   const user = String(process.env.EMAIL_USER || '').trim();
-  const rawPass = String(process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || '').trim();
+  const passwordCandidates = [
+    process.env.EMAIL_APP_PASSWORD,
+    process.env.EMAIL_PASS,
+    process.env.EMAIL_PASSWORD,
+    process.env.SMTP_PASS,
+    process.env.GMAIL_APP_PASSWORD,
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+
+  const selectedPassword = passwordCandidates.find((value) => !looksLikePlaceholder(value)) || '';
+  const rawPass = selectedPassword || passwordCandidates[0] || '';
   const pass = rawPass.replace(/\s+/g, '');
   const service = String(process.env.EMAIL_SERVICE || '').trim() || undefined;
   const host = String(process.env.EMAIL_HOST || '').trim() || undefined;
   const port = Number(process.env.EMAIL_PORT || 587);
 
-  if (!user || !pass || pass.toLowerCase() === 'your_app_password' || pass.toLowerCase() === 'replace_with_16_char_google_app_password') {
+  if (!user || looksLikePlaceholder(user) || looksLikePlaceholder(pass)) {
     throw new Error('Email is not configured. Set EMAIL_USER and a valid Gmail app password in EMAIL_APP_PASSWORD (or EMAIL_PASS).');
   }
 

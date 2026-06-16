@@ -5,6 +5,7 @@ import { createOrder } from '../redux/slices/orderSlice';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { MapPin, Truck, CreditCard, CheckCircle, ChevronRight } from 'lucide-react';
+import { isVideoUrl } from '../utils/imageUrl';
 
 const steps = ['Shipping', 'Delivery', 'Payment', 'Review'];
 
@@ -281,7 +282,6 @@ export default function Checkout() {
         <div className="card p-4 sm:p-5 space-y-3 h-fit">
           <h3 className="font-bold text-gray-900">Order Summary</h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-    import { isVideoUrl } from '../utils/imageUrl';
             {items.map((i) => (
               <div key={i._id} className="flex items-center gap-2">
                 {isVideoUrl(i.product?.images?.[0]) ? (

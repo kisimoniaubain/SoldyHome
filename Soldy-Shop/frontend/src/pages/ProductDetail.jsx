@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductById } from '../redux/slices/productSlice';
 import { addToCart } from '../redux/slices/cartSlice';
-import { toggleWishlist } from '../redux/slices/wishlistSlice';
+import { toggleWishlistAsync } from '../redux/slices/wishlistSlice';
 import Loader from '../components/Loader';
 import StarRating from '../components/StarRating';
 import api from '../services/api';
@@ -165,7 +165,7 @@ export default function ProductDetail() {
               className="btn-primary flex items-center gap-2 flex-1 justify-center">
               <ShoppingCart size={18} /> Add to Cart
             </button>
-            <button onClick={() => dispatch(toggleWishlist(product))}
+            <button onClick={() => { if (!user) { navigate('/login'); return; } dispatch(toggleWishlistAsync(product)); }}
               className={`p-3 rounded-xl border transition-colors ${isWishlisted ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 text-gray-400 hover:text-red-500'}`}>
               <Heart size={20} fill={isWishlisted ? 'currentColor' : 'none'} />
             </button>
