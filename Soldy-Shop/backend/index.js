@@ -98,6 +98,24 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/contact', contactRoutes);
 
+app.get('/api/storage/status', (req, res) => {
+  const requiredEnv = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+  const missingVars = requiredEnv.filter((name) => {
+    const value = process.env[name];
+    return !value || value.startsWith('your_');
+  });
+
+  const cloudinaryReady = missingVars.length === 0;
+
+  res.json({
+    success: true,
+    provider: cloudinaryReady ? 'cloudinary' : 'local',
+    activeMode: cloudinaryReady ? 'cloudinary' : 'local',
+    ready: true,
+    missingVars,
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

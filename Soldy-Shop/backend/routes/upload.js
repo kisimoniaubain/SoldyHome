@@ -66,6 +66,41 @@ const toLocalExtension = (originalName, mimetype) => {
   return '.jpg';
 };
 
+const saveFileLocally = (file) => {
+  const safeExt = toLocalExtension(file.originalname, file.mimetype);
+  const fileName = `${Date.now()}-${crypto.randomUUID()}${safeExt}`;
+  const filePath = path.join(uploadsDir, fileName);
+
+  fs.writeFileSync(filePath, file.buffer);
+
+  return {
+    url: `/uploads/${fileName}`,
+    resourceType: file.mimetype.startsWith('video/') ? 'video' : 'image',
+    storage: 'local',
+  };
+};
+
+const getStorageStatus = () => {
+  const requiredEnv = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+  const missingVars = requiredEnv.filter((name) => {
+    const value = process.env[name];
+    return !value || value.startsWith('your_');
+  });
+
+  const cloudinaryReady = isCloudinaryConfigured();
+
+  return {
+    provider: cloudinaryReady ? 'cloudinary' : 'local',
+    activeMode: cloudinaryReady ? 'cloudinary' : 'local',
+    ready: true,
+    missingVars,
+  };
+};
+
+router.get('/status', (req, res) => {
+  res.json({ success: true, ...getStorageStatus() });
+});
+
 router.post(
   '/',
   protect,
@@ -82,16 +117,7 @@ router.post(
 
     if (!isCloudinaryConfigured()) {
       for (const file of files) {
-        const safeExt = toLocalExtension(file.originalname, file.mimetype);
-        const fileName = `${Date.now()}-${crypto.randomUUID()}${safeExt}`;
-        const filePath = path.join(uploadsDir, fileName);
-
-        fs.writeFileSync(filePath, file.buffer);
-        uploaded.push({
-          url: `/uploads/${fileName}`,
-          resourceType: file.mimetype.startsWith('video/') ? 'video' : 'image',
-          storage: 'local',
-        });
+        uploaded.push(saveFileLocally(file));
       }
 
       return res.json({
@@ -116,12 +142,18 @@ router.post(
         options.transformation = [{ width: 800, quality: 'auto', fetch_format: 'auto' }];
       }
 
-      const result = await cloudinary.uploader.upload(dataURI, options);
-      uploaded.push({
-        url: result.secure_url,
-        publicId: result.public_id,
-        resourceType: result.resource_type || (isVideo ? 'video' : 'image'),
-      });
+      try {
+        const result = await cloudinary.uploader.upload(dataURI, options);
+        uploaded.push({
+          url: result.secure_url,
+          publicId: result.public_id,
+          resourceType: result.resource_type || (isVideo ? 'video' : 'image'),
+          storage: 'cloudinary',
+        });
+      } catch (error) {
+        // Keep uploads working during transient cloud provider issues.
+        uploaded.push(saveFileLocally(file));
+      }
     }
 
     return res.json({
@@ -132,5 +164,21 @@ router.post(
     });
   })
 );
+
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ success: false, message: 'File too large. Max size is 50MB.' });
+    }
+
+    return res.status(400).json({ success: false, message: err.message });
+  }
+
+  if (err && err.message === 'Only image and video files are allowed') {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+
+  return next(err);
+});
 
 module.exports = router;
