@@ -115,17 +115,44 @@ router.post(
 
     const uploaded = [];
     const isProduction = process.env.NODE_ENV === 'production';
+    const cloudinaryConfigured = isCloudinaryConfigured();
 
-    if (!isCloudinaryConfigured()) {
-      if (isProduction) {
-        return res.status(500).json({
-          success: false,
-          message: 'Cloudinary is required in production for persistent media storage.',
-        });
-      }
-
+    // Always use Cloudinary if configured, regardless of environment
+    if (cloudinaryConfigured) {
       for (const file of files) {
-        uploaded.push(saveFileLocally(file));
+        const b64 = Buffer.from(file.buffer).toString('base64');
+        const dataURI = `data:${file.mimetype};base64,${b64}`;
+        const isVideo = file.mimetype.startsWith('video/');
+
+        const options = {
+          folder: 'soldy-shop',
+          resource_type: 'auto',
+        };
+
+        if (!isVideo) {
+          options.transformation = [{ width: 800, quality: 'auto', fetch_format: 'auto' }];
+        }
+
+        try {
+          const result = await cloudinary.uploader.upload(dataURI, options);
+          uploaded.push({
+            url: result.secure_url,
+            publicId: result.public_id,
+            resourceType: result.resource_type || (isVideo ? 'video' : 'image'),
+            storage: 'cloudinary',
+          });
+        } catch (error) {
+          console.error('Cloudinary upload failed:', error.message);
+          // If Cloudinary fails in production, reject. In dev, fallback to local.
+          if (isProduction) {
+            return res.status(502).json({
+              success: false,
+              message: 'Image upload failed on Cloudinary. Please retry.',
+            });
+          }
+          // Dev fallback
+          uploaded.push(saveFileLocally(file));
+        }
       }
 
       return res.json({
@@ -136,39 +163,17 @@ router.post(
       });
     }
 
+    // Cloudinary not configured
+    if (isProduction) {
+      return res.status(500).json({
+        success: false,
+        message: 'Cloudinary is required in production for persistent media storage. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.',
+      });
+    }
+
+    // In development, use local storage as fallback
     for (const file of files) {
-      const b64 = Buffer.from(file.buffer).toString('base64');
-      const dataURI = `data:${file.mimetype};base64,${b64}`;
-      const isVideo = file.mimetype.startsWith('video/');
-
-      const options = {
-        folder: 'soldy-shop',
-        resource_type: 'auto',
-      };
-
-      if (!isVideo) {
-        options.transformation = [{ width: 800, quality: 'auto', fetch_format: 'auto' }];
-      }
-
-      try {
-        const result = await cloudinary.uploader.upload(dataURI, options);
-        uploaded.push({
-          url: result.secure_url,
-          publicId: result.public_id,
-          resourceType: result.resource_type || (isVideo ? 'video' : 'image'),
-          storage: 'cloudinary',
-        });
-      } catch (error) {
-        if (isProduction) {
-          return res.status(502).json({
-            success: false,
-            message: 'Image upload failed on Cloudinary. Please retry.',
-          });
-        }
-
-        // In development, fallback to local files for convenience.
-        uploaded.push(saveFileLocally(file));
-      }
+      uploaded.push(saveFileLocally(file));
     }
 
     return res.json({

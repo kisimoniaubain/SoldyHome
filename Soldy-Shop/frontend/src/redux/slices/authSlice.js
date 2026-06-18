@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const safeStorageGet = (key) => {
   try {
-    return sessionStorage.getItem(key) || localStorage.getItem(key);
+    return sessionStorage.getItem(key);
   } catch {
     return null;
   }
@@ -13,7 +13,6 @@ const safeStorageGet = (key) => {
 const safeStorageSet = (key, value) => {
   try {
     sessionStorage.setItem(key, value);
-    localStorage.setItem(key, value);
   } catch {
     // ignore storage errors to avoid hard crashes
   }
@@ -22,7 +21,6 @@ const safeStorageSet = (key, value) => {
 const safeStorageRemove = (key) => {
   try {
     sessionStorage.removeItem(key);
-    localStorage.removeItem(key);
   } catch {
     // ignore storage errors to avoid hard crashes
   }
@@ -90,14 +88,20 @@ export const unlockAdminAccess = createAsyncThunk('auth/unlockAdminAccess', asyn
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState: {
-    // Start with fresh state - no auto-login on app load
-    user: null,
-    token: null,
-    adminAccessGranted: false,
-    loading: false,
-    error: null,
-  },
+  initialState: (() => {
+    // Restore from sessionStorage on page load (survives refresh, clears on browser close)
+    const savedToken = safeStorageGet('soldyToken');
+    const savedUser = parseSavedUser(safeStorageGet('soldyUser'));
+    const savedAdminAccess = safeStorageGet('soldyAdminAccess') === 'true';
+    
+    return {
+      user: savedUser,
+      token: savedToken,
+      adminAccessGranted: savedAdminAccess,
+      loading: false,
+      error: null,
+    };
+  })(),
   reducers: {
     logout: (state) => {
       state.user = null;
