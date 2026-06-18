@@ -90,20 +90,14 @@ export const unlockAdminAccess = createAsyncThunk('auth/unlockAdminAccess', asyn
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState: (() => {
-    // Restore from localStorage on app load
-    const savedToken = safeStorageGet('soldyToken');
-    const savedUser = parseSavedUser(safeStorageGet('soldyUser'));
-    const savedAdminAccess = safeStorageGet('soldyAdminAccess') === 'true';
-    
-    return {
-      user: savedUser,
-      token: savedToken,
-      adminAccessGranted: savedAdminAccess,
-      loading: false,
-      error: null,
-    };
-  })(),
+  initialState: {
+    // Start with fresh state - no auto-login on app load
+    user: null,
+    token: null,
+    adminAccessGranted: false,
+    loading: false,
+    error: null,
+  },
   reducers: {
     logout: (state) => {
       state.user = null;
