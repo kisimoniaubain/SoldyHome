@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const safeStorageGet = (key) => {
   try {
-    return sessionStorage.getItem(key);
+    return sessionStorage.getItem(key) || localStorage.getItem(key);
   } catch {
     return null;
   }
@@ -13,6 +13,7 @@ const safeStorageGet = (key) => {
 const safeStorageSet = (key, value) => {
   try {
     sessionStorage.setItem(key, value);
+    localStorage.setItem(key, value);
   } catch {
     // ignore storage errors to avoid hard crashes
   }
@@ -21,13 +22,13 @@ const safeStorageSet = (key, value) => {
 const safeStorageRemove = (key) => {
   try {
     sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
   } catch {
     // ignore storage errors to avoid hard crashes
   }
 };
 
-// Keep user logged in - restore from localStorage
-// (removed forced logout on app open)
+// Restore auth state from available browser storage.
 
 const parseSavedUser = (rawValue) => {
   if (!rawValue) return null;

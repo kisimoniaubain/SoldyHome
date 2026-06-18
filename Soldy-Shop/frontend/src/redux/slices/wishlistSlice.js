@@ -3,6 +3,14 @@ import { logout } from './authSlice';
 import api from '../../services/api';
 import { setWishlistCount } from './wishlistNotificationsSlice';
 
+const hasAuthToken = () => {
+  try {
+    return Boolean(sessionStorage.getItem('soldyToken') || localStorage.getItem('soldyToken'));
+  } catch {
+    return false;
+  }
+};
+
 // Async thunk to fetch wishlist items from server
 export const fetchWishlist = createAsyncThunk(
   'wishlist/fetchWishlist',
@@ -40,8 +48,8 @@ export const toggleWishlistAsync = createAsyncThunk(
 
 const loadWishlist = () => {
   try {
-    // Only load wishlist if user is logged in (has sessionStorage token)
-    if (!sessionStorage.getItem('soldyToken')) {
+    // Only load cached wishlist when a token exists in browser storage.
+    if (!hasAuthToken()) {
       return [];
     }
     const raw = localStorage.getItem('soldyWishlist');

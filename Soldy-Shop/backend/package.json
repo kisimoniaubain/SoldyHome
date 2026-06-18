@@ -8,7 +8,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "seed:furniture": "node scripts/seedFurnitureProducts.js",
-    "check:mpesa": "node scripts/check-mpesa-readiness.js"
+    "check:mpesa": "node scripts/check-mpesa-readiness.js",
+    "cleanup:wishlist": "node scripts/cleanupWishlistData.js",
+    "cleanup:wishlist:dry": "node scripts/cleanupWishlistData.js --dry-run"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -18,13 +18,39 @@ export default function AdminProducts() {
   const [form, setForm] = useState(EMPTY_PRODUCT);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [storageStatus, setStorageStatus] = useState({
+    provider: 'checking',
+    activeMode: 'checking',
+    missingVars: [],
+  });
 
   const loadProducts = () => {
     setLoading(true);
     api.get('/products?pageSize=50').then((r) => setProducts(r.data.products)).finally(() => setLoading(false));
   };
 
+  const loadStorageStatus = () => {
+    api.get('/storage/status')
+      .then((r) => {
+        setStorageStatus({
+          provider: String(r.data?.provider || 'unknown').toLowerCase(),
+          activeMode: String(r.data?.activeMode || 'unknown').toLowerCase(),
+          missingVars: Array.isArray(r.data?.missingVars) ? r.data.missingVars : [],
+        });
+      })
+      .catch(() => {
+        setStorageStatus({
+          provider: 'unknown',
+          activeMode: 'offline',
+          missingVars: [],
+        });
+      });
+  };
+
   useEffect(() => { loadProducts(); }, []);
+  useEffect(() => { loadStorageStatus(); }, []);
+
+  const isPersistentStorage = storageStatus.activeMode === 'cloudinary';
 
   const openCreate = () => { setForm(EMPTY_PRODUCT); setEditing(null); setShowModal(true); };
   const openEdit = (p) => { setForm({ ...p, price: p.price, discountPrice: p.discountPrice || '' }); setEditing(p._id); setShowModal(true); };
@@ -98,6 +124,20 @@ export default function AdminProducts() {
         <button onClick={openCreate} className="btn-primary flex items-center gap-2 text-sm py-2">
           <Plus size={16} /> Add Product
         </button>
+      </div>
+
+      <div className={`rounded-xl border px-4 py-3 text-sm ${isPersistentStorage
+        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-200'
+        : 'border-[#b45309] bg-[#b45309] text-white dark:border-[#b45309] dark:bg-[#b45309] dark:text-white'
+      }`}>
+        {isPersistentStorage
+          ? 'Upload storage is Cloudinary. Product images/videos are persistent across deploys and restarts.'
+          : 'Upload storage is not persistent. Configure Cloudinary before uploading production images/videos.'}
+        {!isPersistentStorage && storageStatus.missingVars.length > 0 ? (
+          <div className="mt-1 text-xs opacity-90">
+            Missing env vars: {storageStatus.missingVars.join(', ')}
+          </div>
+        ) : null}
       </div>
 
       {loading ? <div className="flex justify-center py-16"><Loader /></div> : (
@@ -188,6 +228,11 @@ export default function AdminProducts() {
               </div>
               <div>
                 <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Upload Images/Videos</label>
+                {!isPersistentStorage ? (
+                  <div className="mb-2 rounded-lg border border-[#b45309] bg-[#b45309] px-3 py-2 text-xs text-white">
+                    Warning: uploads are not persistent until Cloudinary mode is active.
+                  </div>
+                ) : null}
                 <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
                   {uploading ? 'Uploading...' : 'Select media files'}
                   <input

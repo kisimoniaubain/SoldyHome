@@ -37,6 +37,8 @@ api.interceptors.response.use(
 
     if (status === 401 && message.includes('token')) {
       try {
+        sessionStorage.removeItem('soldyToken');
+        sessionStorage.removeItem('soldyUser');
         localStorage.removeItem('soldyToken');
         localStorage.removeItem('soldyUser');
       } catch {

@@ -38,12 +38,14 @@ export default function ProductCard({ product }) {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!user) { navigate('/login'); return; }
     dispatch(addToCart({ productId: product._id, qty: 1 }));
   };
 
   const handleWishlist = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!user) {
       navigate('/login');
       return;

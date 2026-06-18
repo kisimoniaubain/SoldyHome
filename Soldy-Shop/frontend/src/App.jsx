@@ -39,7 +39,12 @@ import AdminMessages from './pages/admin/MessagesManager';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Standalone Explore page (without shop navbar/footer) */}
         <Route path="/explore" element={<Explore />} />

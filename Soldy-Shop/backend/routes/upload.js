@@ -114,8 +114,16 @@ router.post(
     }
 
     const uploaded = [];
+    const isProduction = process.env.NODE_ENV === 'production';
 
     if (!isCloudinaryConfigured()) {
+      if (isProduction) {
+        return res.status(500).json({
+          success: false,
+          message: 'Cloudinary is required in production for persistent media storage.',
+        });
+      }
+
       for (const file of files) {
         uploaded.push(saveFileLocally(file));
       }
@@ -151,7 +159,14 @@ router.post(
           storage: 'cloudinary',
         });
       } catch (error) {
-        // Keep uploads working during transient cloud provider issues.
+        if (isProduction) {
+          return res.status(502).json({
+            success: false,
+            message: 'Image upload failed on Cloudinary. Please retry.',
+          });
+        }
+
+        // In development, fallback to local files for convenience.
         uploaded.push(saveFileLocally(file));
       }
     }
